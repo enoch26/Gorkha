@@ -1,0 +1,579 @@
+# Data --------------------------------------------------------------------
+# Nepal shp
+# https://download.hermes.com.np/nepal-administrative-boundary-wgs/
+
+# Nepal - National Boundary
+# Province Boundary
+# District Boundary
+# Local Level Boundary
+# The administrative boundaries gets updated sometimes so you may as well check Survey Department Geo-portal Site for the updated maps
+# River Network-Line
+# Major River Network-Polygon
+# Settlement Names
+# Settlement Names as published by department of Survey
+# Ward Map
+# https://sites.google.com/view/maze215/Maps/Nepal-Shp
+# https://nationalgeoportal.gov.np/#/dataset
+# landslides
+## Gnyawali and others (2016)
+# https://www.sciencebase.gov/catalog/item/5874a7cee4b0a829a320bb3e
+# https://data.usgs.gov/datacatalog/data/USGS:5874a7cee4b0a829a320bb3e
+# https://www.sciencebase.gov/catalog/item/614512b3d34e0df5fb95b5f9
+# https://www.sciencebase.gov/catalog/item/59cd0585e4b00fa06fefe80a
+## Valagussa and others (2021)
+# https://www.sciencebase.gov/catalog/item/61f040e1d34e8b818adc3251
+# boundary box
+# https://www.sciencebase.gov/catalog/item/imap/61f040e1d34e8b818adc3251
+
+# landuse
+# https://rds.icimod.org/Home/DataDetail?metadataId=1972729
+# Land Cover of Himalaya Region
+# hima_lc_npl
+# https://data.apps.fao.org/map/catalog/srv/eng/catalog.search#/metadata/46d3c2ef-72c3-4f96-8e32-40723cd1847b
+# https://storage.googleapis.com/fao-maps-catalog-data/geonetwork/landcover/hima_lc_npl.zip
+
+# geology
+# https://www.sciencebase.gov/catalog/item/60c3b89fd34e86b93897ef19
+# considering buy a proper geology map
+# https://dmgnepal.gov.np/en/resources/province-and-regional-geological-maps-6665
+# even ESCAP map back in 1993 is better than the current one
+# https://repository.unescap.org/handle/20.500.12870/4866
+# Geological data of Nepal's Gorkha Earthquake 2015 affected area
+# https://rds.icimod.org/Home/DataDetail?metadataId=24676&searchlist=True
+
+
+# DEM
+# https://opentopography.org/news/updated-copernicus-30m-DEM-available
+# https://github.com/mlampros/CopernicusDEM
+# https://doi.org/10.5069/G9028PQB
+# Elevation Zones of Nepal
+# https://rds.icimod.org/Home/DataDetail?metadataId=834&searchlist=True
+
+# waterbody
+# Water Bodies 2014-2020 (raster 300 m), global, 10-daily – version 1 - Geotiff (NUTS: NP)
+# raster on 24 April 2015, Nepal earthquake that took place on 25 April 2015
+# https://land.copernicus.eu/en/products/water-bodies/water-bodies-global-v1-0-300m
+# Nepal Watercourses - Rivers
+# Time Period of the Dataset [?]
+# January 01, 2001-January 01, 2001
+# https://data.humdata.org/dataset/nepal-watercourses-rivers
+# MERIT Hydro: Global Hydrography Datasets
+# https://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_Hydro/
+# https://water.usgs.gov/catalog/datasets/05199160-2947-404d-bac7-ba6aed53a96e/
+
+# Internal Relief Map of Nepal's Gorkha Earthquake 2015 affected area
+
+
+# Soil water index
+# Soil Water Index 2007-present (raster 12.5 km), global, 10-daily – version 3 - Netcdf (NUTS: NP)
+# Soil Water Index 2007-present (raster 12.5 km), global, daily – version 3 - Netcdf (NUTS: NP)
+
+
+# try out this dataset with bigger coverage
+# TODO https://www.sciencebase.gov/catalog/item/582c74fbe4b04d580bd377e8
+
+
+# set global var ----------------------------------------------------------
+
+to_plot <- TRUE
+ncore <- 10
+x_bin <- 500
+edge_len_n <- 2
+seed <- c(1234, 1234)
+set.seed(1234)
+tw <- 15.55528
+# no of knots for the aspect spde
+seg <- 4
+fdr <- "lanczos_"
+JU <- FALSE
+
+# Library -----------------------------------------------------------------
+
+
+library(dplyr)
+library(stars)
+library(sf)
+library(fmesher)
+library(INLA)
+library(inlabru)
+library(here)
+library(ggplot2)
+library(terra)
+library(tidyterra)
+library(future)
+
+plan(multicore, workers = ncore)
+options(future.globals.maxSize = 7864320000)
+options(future.rng.onMisuse = "ignore")
+
+inla.setOption(num.threads = ncore)
+source(here("function.R"))
+
+# nepal boundary and landslides bbox  -------------------------------------
+
+source(here("nepal_bnd.R"))
+
+
+# landslides data ---------------------------------------------------------
+
+
+landslides %<-% {
+  st_read(
+    here(
+      "data", "Valagussaandoth", "Valagussa_2021", "Valagussa_2021.shp"
+    )
+  ) %>%
+    st_transform(crs = crs_nepal) %>% # to UTM
+    st_intersection(bnd_out)
+}
+
+landslides_c <- st_centroid(landslides) %>% st_intersection(bnd)
+# TODO find crown pt with flow direction
+
+# TODO split data for model and test data, turn it back to df and then to sf to avoid the error
+# Error : [] nrow dataframe does not match nrow geometry
+# In addition: Warning messages:
+#   1: In base::library(pkg, character.only = TRUE) :
+#   package ‘inlabru’ already present in search()
+# 2: [SpatVector from sf] not all geometries were transferred, use svc for a geometry collection
+# Error: [as,sf] coercion failed. You can try coercing via a Spatial* (sp) class
+# test_idx <- sample(1:nrow(landslides_c), 0.5*nrow(landslides_c))
+# landslides_c_test <- landslides[test_idx, ]
+# landslides_c <- landslides[-test_idx, ]
+landslides_c$logarea_m2 <- log(landslides_c$Area_m2)
+
+landuse %<-% {
+  st_read(
+    here(
+      "data",
+      "hima_lc_npl",
+      "lc_nepal.shp"
+    )
+  ) %>%
+    st_transform(crs = crs_nepal) %>% # to UTM
+    st_intersection(bnd_out)
+}
+
+# Landuse without landslides
+landuse$landslides_count <- lengths(st_intersects(landuse, landslides_c))
+
+landuse_df <- as.data.frame(landuse) %>%
+  group_by(CODE1) %>%
+  summarise(
+    total_count = sum(landslides_count),
+    .groups = "drop"
+  )
+# CODE1 with landslides
+landuse_ref <- landuse_df %>%
+  filter(total_count != 0) %>%
+  pull(CODE1)
+
+landuse$CODE1_ref <- ifelse(landuse$CODE1 %in% landuse_ref,
+  0, 1
+)
+
+landuse$CODE1 <- as.factor(landuse$CODE1)
+
+# 8WP is problematic, so we replace it with NA, and NA will be replace with bru_fill_missing with nearest 
+landuse <- landuse_ <- landuse %>%
+  mutate(CODE1 = stringr::str_replace(CODE1, "8WP", NA_character_))
+
+# after bru fill missing. see landuse_fill.R
+# landuse %<-% {
+#   st_read(
+#     here(
+#       "data",
+#       "landuse_.shp"
+#     )
+#   ) %>%
+#     st_transform(crs = crs_nepal) %>% # to UTM
+#     st_intersection(bnd_out)
+# }
+
+# hydrology ---------------------------------------------------------------
+# TODO barrier model?
+# https://land.copernicus.eu/en/technical-library/product-user-manual-10-daily-land-surface-temperature-v1.0/@@download/file
+if(FALSE){
+  wb %<-% {
+    rast(
+      here(
+        "data", "146856", "Results",
+        "Water Bodies 2014-2020 (raster 300 m), global, 10-daily – version 1",
+        "c_gls_WB300_201504210000_GLOBE_PROBAV_V1.0.1_NP_WB.nc"
+      )
+    ) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+  }
+  
+  # ggplot() + geom_spatraster(data = wb) + geom_sf(data = bnd_out, fill = NA, col = "red")
+  # ggsave("figures/wb.png", width = tw, height = tw/2)
+  
+  if (file.exists(here("data", "water.shp"))) {
+    water <- st_read(here("data", "water.shp"))
+  } else {
+    water %<-% {
+      st_read(
+        here(
+          "data",
+          "npl-watcrsa-hydro-25k-50k-sdn-wgs84-shp",
+          "npl_watcrsa_hydro_25K_50K_sdn_wgs84.shp"
+        )
+      ) %>%
+        st_make_valid() %>%
+        st_transform(crs = crs_nepal) %>% # to UTM
+        st_intersection(bnd_out)
+    }
+    st_write(water, here("data", "water.shp"), overwrite = TRUE)
+    ggplot() +
+      geom_sf(data = water) +
+      geom_sf(data = bnd_out, fill = NA, col = "red")
+    ggsave("figures/water.png", width = tw, height = tw / 2)
+  }
+  
+}
+
+
+
+
+# water_crop <- st_crop(water, bbox_coords)
+
+# ggplot() + geom_sf(data = water, aes(fill = FCODE)) +
+#   geom_sf(data = bnd, fill = NA, col = "red") +
+#   geom_sf(data = bnd_out, fill = NA, col = "red")
+# ggsave("figures/water.png", width = tw, height = tw/2)
+
+# landuse$CODE1 <- relevel(as.factor(landuse$CODE1),
+#                          ref = "1HSs") # TODO oringially 2TCOne//2TCObe
+
+# data format and source
+# https://cbworden.github.io/shakemap/manual4_0/ug_products.html
+# The units (except for MMI, which is expressed in linear units) are the natural logarithm of the physical units: for acceleration that is ln(g) and for velocity the units are ln(cm/s).
+pga_mean_raster <-
+  rast(here(
+    "data", "raster", "pga_mean.flt"
+  )) %>%
+  project(crs_nepal$input) %>%
+  crop(bnd_out, mask = TRUE)
+
+
+# After looking into the variance, it is not sure if it is systematic or local error
+# otherwise Cmatrix generic0 to incorporate uncertainty would work
+# pga_std_raster <-
+#   rast(here(
+#     "data", "raster", "pga_std.flt"
+#   )) %>%
+#   project(crs_nepal$input) %>%
+#   crop(bnd_out, mask = TRUE)
+
+# revert back to original scale
+pga_mean_raster$pga_mean_exp <- exp(pga_mean_raster$pga_mean)
+# pga_std_raster$pga_std_exp <- exp(pga_std_raster$pga_std)
+
+# https://www.nature.com/articles/s43247-024-01822-9
+# The 2015 Nepal earthquake generated peak ground accelerations (PGA) ranging from 0.1 g to 0.5 g
+
+# DEM related ---------------------------------------------------------------------
+# https://stackoverflow.com/questions/76209910/replace-nas-by-numeric-values-in-rasterstack-raster-or-multi-layer-spatraster
+
+pred_mchi_terra <- rast(paste0("data/lsdtt/", fdr, "/rf2ch_mchi.tif"))
+pred_mchi_terra_ <- rast(paste0("data/lsdtt/", fdr, "/rf2ch_mchi_.tif"))
+
+if (FALSE) {
+rf2ch <- rast(here("data", "lsdtt", fdr, "cop30dem_RELIEFTOCHAN.bil")) %>%
+  project(crs_nepal$input) %>%
+  crop(bnd_out, mask = TRUE)
+rf2ch$rf2ch_km <- values(rf2ch) / 1000
+
+twi <- rast(here("data", "lsdtt", fdr, "cop30dem_TWI.bil")) %>%
+  project(crs_nepal$input) %>%
+  crop(bnd_out, mask = TRUE)
+names(twi) <- "twi"
+  if (file.exists(here("data", "cop30dem.tif"))) {
+    dem <- rast(here("data", "cop30dem.tif")) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+  } else {
+    dem <- rast(here("data", "output_hh.tif")) %>%
+      project(crs_nepal$input) %>%
+      # crop(st_as_sfc(landslides_bbox), mask = TRUE)
+      crop(bnd_out, mask = TRUE)
+    # dem <- project(dem, crs_nepal$input)
+    # dem <- dem %>% crop(bnd_out, mask = TRUE)
+    dem$dem_km <- dem$output_hh / 1000
+
+    writeRaster(dem, here("data", "cop30dem.tif"), overwrite = TRUE)
+  }
+
+  crit <- c("slope", "aspect", "roughness", "flowdir")
+  # , "TPI", "TRIriley", "TRIrmsd")
+
+  if (file.exists(here("data", "dem_terrain_mask.tif"))) {
+    dem_terrain_mask <- rast(here("data", "dem_terrain_mask.tif")) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+  } else {
+    dem_terrain_mask <-
+      terrain(dem$dem_km,
+        v = crit, unit = "radians",
+        neighbors = 8
+      )
+    # https://rspatial.org/pkg/5-methods.html
+    rclmat <- seq(0, 2 * pi, length.out = 37)
+    dem_terrain_mask$asp_gp <-
+      classify(dem_terrain_mask$aspect, rclmat, include.lowest = TRUE)
+
+    writeRaster(dem_terrain_mask, here("data", "dem_terrain_mask.tif"))
+  }
+
+
+
+  # TODO even kernel with larger radius
+  # norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)}
+
+
+
+  if (file.exists(here("data", "dem_terrain_focal.tif")) &&
+    file.exists(here("data", "dem_terrain_focal2.tif"))) {
+    dem_terrain_focal <- rast(here("data", "dem_terrain_focal.tif")) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+    dem_terrain_focal2 <- rast(here("data", "dem_terrain_focal2.tif")) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+  } else {
+    dem_terrain_mask_ <-
+      terrain(dem$dem_km,
+        v = "slope", unit = "radians",
+        neighbors = 4
+      )
+
+    # TODO I reckon the grad easting and northing should be swapped and without negative sign
+    dem_terrain_mask_$grad_easting <-
+      -sin(dem_terrain_mask$aspect) * tan(dem_terrain_mask$slope)
+
+    dem_terrain_mask_$grad_northing <-
+      -cos(dem_terrain_mask$aspect) * tan(dem_terrain_mask$slope)
+
+    # here the kernel is a weight matrix, eg 1,2,4,2,1 convolution matrix, discrete roughly circular
+    norm_kernel2 <- norm_kernel <- gkernel(matrix(1, 2, 2), norm = TRUE) # radius 3*30 / 2 = 45 m
+    stack_times <- 10 # TODO should be larger than mesh size, or do subdivide mesh into 9
+
+    for (i in 1:(stack_times / 2)) {
+      norm_kernel <- gkernel(norm_kernel, norm = TRUE)
+    }
+    # radius # col of matrix *30/2 =75 m
+    for (i in 1:stack_times) {
+      norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)
+    }
+
+    dem_terrain_focal <- focal(dem_terrain_mask_,
+      w = norm_kernel, fun = sum
+    )
+    dem_terrain_focal2 <- focal(dem_terrain_mask_,
+      w = norm_kernel2, fun = sum
+    )
+
+    # dem_terrain_focal$relief <- sqrt(dem_terrain_mask$grad_easting^2 + dem_terrain_mask$grad_northing^2) I did use mask during the meeting but is it mask or focal?
+    dem_terrain_focal$relief <- sqrt(dem_terrain_focal$grad_easting^2 + dem_terrain_focal$grad_northing^2)
+    dem_terrain_focal2$relief <- sqrt(dem_terrain_focal2$grad_easting^2 + dem_terrain_focal2$grad_northing^2)
+
+    writeRaster(dem_terrain_focal, here("data", "dem_terrain_focal.tif"))
+    writeRaster(dem_terrain_focal2, here("data", "dem_terrain_focal2.tif"))
+  }
+
+
+  # nepal
+  # TODO curvature/twi/spi/tri/distance to river/stream sediment transport index(STI)
+  # https://www.esri.com/arcgis-blog/products/product/imagery/understanding-curvature-rasters/
+  # https://www.rdocumentation.org/packages/spatialEco/versions/2.0-2/topics/curvature
+  if (file.exists(here("data", "dem_curvature.tif"))) {
+    crv_planform <- rast(here("data", "crv_planform.tif")) %>%
+      project(crs_nepal$input)
+    crv_profile <- rast(here("data", "crv_profile.tif")) %>%
+      project(crs_nepal$input)
+  } else {
+    crv_planform <- spatialEco::curvature(dem$dem_km, type = "planform") %>%
+      rename(crv_planform = dem_km)
+    crv_profile <- spatialEco::curvature(dem$dem_km, type = "profile") %>%
+      rename(crv_profile = dem_km)
+    # varnames(crv) <- "crv"
+    # longnames(crv) <- "curvature"
+    writeRaster(crv_planform, here("data", "crv_planform.tif"), overwrite = TRUE)
+    writeRaster(crv_profile, here("data", "crv_profile.tif"), overwrite = TRUE)
+  }
+}
+# crv <- curvature(dem$dem_km, type = "platform")
+
+# geology
+
+
+# https://www.sciencebase.gov/catalog/item/60c3b89fd34e86b93897ef19
+# geo8alg <- st_read(
+#   here("data/geo8alg/geo8alg.shp")
+# ) %>%
+#   st_transform(crs = crs_nepal) %>% # to UTM
+#   st_intersection(bnd_out)
+
+# https://catalog.data.gov/dataset/geologic-map-of-south-asia-geo8ag
+# geo8apg <- st_read(
+#   here("data/geo8apg/geo8apg.shp")
+# ) %>%
+#   st_transform(crs = crs_nepal) %>% # to UTM
+#   st_intersection(st_as_sfc(landslides_bbox))
+# st_intersection(bnd_out)
+
+# original file before bru fill missing
+# nepal_geo %<-% {st_read(here("data", "Nep_Geo", "Geology", "Nep_geology.shp")) %>%
+#   st_transform(crs = crs_nepal) %>%
+#   st_intersection(bnd_out)
+# }
+
+nepal_geo %<-% {
+  st_read(here("data", "nepal_geo_fill_.shp")) %>%
+    st_transform(crs = crs_nepal) %>%
+    st_intersection(bnd_out)
+}
+
+# nepal_geo_gangetic <- nepal_geo[nepal_geo$ROCK_TYPES == "Gangetic Plain",]
+#
+# ggplot() + geom_sf(data = nepal_geo_gangetic, aes(fill = ROCK_TYPES)) + geom_sf(data = bnd_out_, fill = NA, col = "red")
+#
+# bnd_out_ <- st_difference(bnd_out, nepal_geo_gangetic)
+
+
+# Geology without landslides
+nepal_geo$landslides_count <- lengths(st_intersects(nepal_geo, landslides_c))
+# nepal_geo$ROCK_TYPES_ <-  nepal_geo$ROCK_TYPES %in% c("Bhimphedi Group",
+#                                                       "Gangetic Plain",
+#                                                       "Precambrian Igneous Rocks",
+#                                                       "Sub Himalaya")
+
+nepal_geo_df <- as.data.frame(nepal_geo) %>%
+  group_by(ROCK_TYPES) %>%
+  summarise(
+    total_count = sum(landslides_count),
+    .groups = "drop"
+  )
+# ROCK_TYPES with landslides
+nepal_geo_ref <- nepal_geo_df %>%
+  filter(total_count != 0) %>%
+  pull(ROCK_TYPES)
+
+# 20250114 replace category with no landslides with NA
+# nepal_geo$ROCK_TYPES <- ifelse(nepal_geo$ROCK_TYPES %in% nepal_geo_ref,
+#                                 nepal_geo$ROCK_TYPES, NA
+# )
+
+nepal_geo$ROCK_TYPES_ref <- ifelse(nepal_geo$ROCK_TYPES %in% nepal_geo_ref,
+  0, 1
+)
+
+nepal_geo$ROCK_TYPES <- as.factor(nepal_geo$ROCK_TYPES)
+
+# 20250124 Gangetic Plain still problematic, so we replace it with Siwalik Group
+nepal_geo <- nepal_geo %>%
+  #   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Bhimphedi Group", "Nawakot Group")) %>%
+  mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Gangetic Plain", "Siwalik Group"))
+#   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Precambrian Igneous Rocks", "Kuncha Group")) %>%
+#   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Sub Himalaya", "Siwalik Group"))
+
+
+# chr rather than factor, so that we can keep the name instead of showing ID in the summary
+# relevel to make certain level as baseline if the hyperparameter is fixed
+# nepal_geo$ROCK_TYPES <- relevel(as.factor(nepal_geo$ROCK_TYPES),
+#                                 ref = "Higher Himalaya Crystallines")
+
+# nepal_geof <- system.file("data/Nep_Geo/Geology/Nep_geology.shp",
+#                           package="terra") # doesnt work for some reasons
+
+
+# nepal_geo_rast <- rasterize(
+#   vect(nepal_geo),
+#   rast(vect(nepal_geo), ncols = 10000, nrows = 20000),
+#   "ROCK_TYPES"
+# )
+# source("nepal_geo_rast_fill.R")
+# nepal_geo_rast_fill <-
+#   rast(here("data", "nepal_geo_rast_fill.tif")) %>%
+#                               project(crs_nepal$input) %>%
+#                               crop(bnd_out, mask = TRUE)
+
+
+#########################################
+# tifpath <- system.file(here(
+#   "data",
+#   "Land cover of Nepal 2010",
+#   "data",
+#   "np_lc_2010_v2f.tif"
+# ),
+# package = "stars")
+# tif <- read_stars(tifpath)
+# landuse <- st_as_sf(tif)
+
+
+# mesh --------------------------------------------------------------------
+
+
+## spatial mesh ------------------------------------------------------------
+
+
+system.time({
+  nepal_lattice_sfc %<-% {
+    hexagon_lattice(
+      bnd = bnd, x_bin = x_bin,
+      edge_len_n = edge_len_n
+    )
+  }
+})
+plan(sequential)
+# system.time({
+#   mesh_fm2 <- fm_mesh_2d_inla(loc = landslides, boundary = c(bnd,bnd_out))})
+
+plan(multicore, workers = ncore)
+
+system.time({
+  mesh_fm <- fm_mesh_2d_inla(
+    loc = nepal_lattice_sfc$lattice,
+    boundary = fm_extensions(bnd, c(
+      nepal_lattice_sfc$edge_len,
+      10 * nepal_lattice_sfc$edge_len
+    )), # a shortcut for bnd1 and bnd2
+    # or use boundary, here for comparison with rcdt
+    max.edge = c(
+      1.1 * nepal_lattice_sfc$edge_len, # avoid numerical overflow
+      5 * nepal_lattice_sfc$edge_len
+    ),
+    # max.n.strict = c(
+    # 15300,  # dof 15236 back then
+    # as.integer(0.9 * rcdt_fm$n),
+    # we want to simplify a bit at the boundary otherwise it keeps running forever
+    # 2000
+    # ), # arbitrary
+    # min.angle = 1,
+    cutoff = 0.9 * nepal_lattice_sfc$edge_len, # Filter away adjacent points to avoid Q matrix not positive definite because the boundary resolution is too high
+    crs = fm_crs(bnd)
+  ) # Offset for extra boundaries, if needed.
+})
+
+# subdivide mesh taking n=2 too much RAM, n=1 does not improve anything
+# mesh_fm <- fm_subdivide(mesh_fm, 1)
+
+# fm_pixels for prediction ----------------------------------------------------------
+
+pxl %<-% {
+  fm_pixels(mesh_fm, dims = c(400, 200), mask = bnd_out)
+}
+
+## asp mesh ----------------------------------------------------------------
+
+# mesh_asp %<-% {
+#   fm_mesh_1d(
+#     loc = seq(0, 2 * pi,
+#       length.out = seg + 1
+#     ),
+#     boundary = "cyclic",
+#     degree = 2
+#   )
+# }
+plan(sequential)
