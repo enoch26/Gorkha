@@ -1,0 +1,13 @@
+read fname: cop30dem
+write fname: cop30dem
+
+write_hillshade: true
+carve_before_fill: true
+remove_seas: true
+
+print_segmented_M_chi_map_to_csv: true
+get_basins_from_outlets: true
+basin_outlet_csv: Outlet.csv
+print_basin_raster: true
+
+# end of file

@@ -1,0 +1,255 @@
+# find the basin id for zoomed area
+pts <- st_as_sf(data.frame(long = long, lat = lat),
+                coords = c("long", "lat"),
+                crs = 4326
+) %>% st_transform(crs = crs_nepal)
+
+basin_info <- extract(basin, pts)
+
+
+basin_zm <- basin %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+basin_zm_sf <- as_sf(as.polygons(basin_zm))
+
+
+if(FALSE){
+  mchi_sf_zm04 <- mchi_sf04 %>%
+    st_intersection(st_as_sfc(basin_zm_sf))
+  mchi_sf_zm05 <- mchi_sf05 %>%
+    st_intersection(st_as_sfc(basin_zm_sf))
+  mchi_sf_zm06 <- mchi_sf06 %>%
+    st_intersection(st_as_sfc(basin_zm_sf))
+  
+  rownames(mchi_sf_zm04) <- rownames(mchi_sf_zm05) <- rownames(mchi_sf_zm06) <-  NULL
+  
+  mchi_nm_ls <- c("mchi_sf_zm04", "mchi_sf_zm05", "mchi_sf_zm06")
+  mchi_ls <- list()
+  for(i in seq_along(mchi_nm_ls)){
+    mchi_ls[[i]] <- ggplot() +
+      geom_spatraster_rgb(data = tile) +
+      gg(
+        data = get(mchi_nm_ls[i]), aes(color = log(m_chi)),
+        # geom = "tile",
+        # alpha = .5,
+        size = 0.5
+      ) +
+      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+      ggtitle(paste0("m_n=0.", i+3))  +
+      # geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
+      scale_color_viridis_c(name = expression(log_k[sn])) +
+      ggspatial::annotation_scale(location = "br") +
+      ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+  }
+patchwork::wrap_plots(mchi_ls, guide = "collect", byrow = TRUE, ncol = 3)
+ggsave(paste0("data/lsdtt/", as.character(basin_info$cop30dem_AllBasins),"mchi_mn_wrap.pdf"), width = tw, height = tw/2)
+ggsave(paste0("data/lsdtt/", as.character(basin_info$cop30dem_AllBasins), i, ".pdf"), width = tw, height = tw / 2)
+}
+mchi_sf_zm <- mchi_sf %>%
+  st_intersection(st_as_sfc(basin_zm_sf))
+landslides_zm <- st_intersection(landslides_c, st_as_sfc(basin_zm_sf))
+landslides_poly_zm <- st_intersection(landslides, st_as_sfc(basin_zm_sf))
+
+hs$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+hs_zm <- crop(hs, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+
+rf2ch$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+rf2ch_zm <- crop(rf2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+
+fd2ch$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+fd2ch_zm <- crop(fd2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+
+ksn_tag$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+ksn_tag_zm <- crop(ksn_tag, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+
+# with get_tiles
+# https://dieghernan.github.io/202205_tidyterra/
+tile <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13)
+ksn_tag_zm$log_cop30dem_channel_tagged_pixels <- log(ksn_tag_zm$cop30dem_channel_tagged_pixels)
+mchi_sf_zm$log_m_chi <- log(mchi_sf_zm$m_chi)
+
+# farridge < 0 ------------------------------------------------------------
+
+
+
+
+if(FALSE){
+rf2fr_zero <- rf2fr %>% filter(cop30dem_RELIEFTOFARRIDGE < 1e-10)
+rf2fr_zero$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+rf2fr_zero_zm <- crop(rf2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+fd2fr_zero <- fd2fr %>% filter(cop30dem_FDTOFARRIDGE < .1)
+fd2fr_zero$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+fd2fr_zero_zm <- crop(fd2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+fd2fr$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+fd2fr_zm <- crop(fd2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  ggplot() + 
+    geom_spatraster_rgb(data = tile, alpha = 0.5) +
+    gg(
+    data = mchi_sf_zm, color = "red",
+    # geom = "tile",
+    # alpha = .5,
+    size = 0.1
+  ) + scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) + 
+    geom_spatraster(data = fd2fr_zero_zm$cop30dem_FDTOFARRIDGE, maxcell = 5e+07) + 
+    scale_fill_continuous(na.value = "transparent") +
+    ggspatial::annotation_scale(location = "br") +
+    ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/fd2fr_zero_zm.pdf"), width = tw, height = tw / 2)
+  
+}
+
+
+# find the nearest pairs
+mchi_lds_pairs <- st_nearest_feature(landslides_zm, mchi_sf_zm)
+landslides_zm$flow_distance <- mchi_sf_zm$flow_distance[mchi_lds_pairs]
+landslides_zm$elevation <- mchi_sf_zm$elevation[mchi_lds_pairs]
+
+rownames(landslides_zm) <- rownames(mchi_sf_zm) <- NULL
+landslides_zm_df <- as.data.frame(landslides_zm)
+
+
+
+if (to_plot) {
+  if (FALSE) {
+    # with hillshade hs
+    pal <- gray.colors(100, rev = TRUE)
+    ggplot() +
+      geom_spatraster(data = hs_zm, aes(fill = cop30dem_hs)) +
+      scale_fill_gradientn(colours = pal, na.value = NA) +
+      #   scale_fill_gradientn(colors = gray.colors(100,
+      #   start = 0.2,
+      #   end = .8, rev = TRUE, na.value = NA
+      # )) +
+      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+      gg(
+        data = mchi_sf_zm, aes(color = log(m_chi)),
+        # geom = "tile",
+        # alpha = .5,
+        size = 0.5
+      ) +
+      geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
+      scale_color_viridis_c()
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
+  }
+  
+
+  
+  # https://bookdown.org/brianwood1/QDASS/simple-static-maps.html
+  if (to_plot) {
+    ggplot() +
+      geom_spatraster_rgb(data = tile) +
+      gg(
+        data = mchi_sf_zm, aes(color = log(m_chi)),
+        # geom = "tile",
+        # alpha = .5,
+        size = 0.5
+      ) +
+      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+      geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
+      scale_color_viridis_c(name = expression(log_k[sn])) +
+      ggspatial::annotation_scale(location = "br") +
+      ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
+    
+    ggplot() +
+      # geom_spatraster_rgb(data = tile) +
+      geom_spatraster(
+        data = ksn_tag_zm$log_cop30dem_channel_tagged_pixels,
+        # alpha = .7,
+        maxcell = 5e+06
+      ) +
+      # scale_fill_grass_c(palette = "celsius")
+      scale_fill_grass_c(palette = "viridis", name = expression(log_k[sn])) +
+      # geom_sf(data = mchi_sf_zm, aes(color = log_m_chi),
+      #    # geom = "tile",
+      #    alpha = .5,
+      #    size = 0.1) +
+      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+      geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
+      scale_color_viridis_c(na.value = "transparent") +
+      ggspatial::annotation_scale(location = "br") +
+      ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+    
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tag.pdf"), width = tw, height = tw / 2)
+    
+    ggplot() +
+      geom_spatraster_rgb(data = tile) +
+      gg(
+        data = mchi_sf_zm, aes(
+          color = log(m_chi)
+          # ,alpha = .5
+        ), # geom = "tile",
+        size = 0.5
+      ) +
+      geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.1, aes(alpha = log(Area_m2))) +
+      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+      scale_color_viridis_c(name = expression(log_k[sn])) +
+      ggspatial::annotation_scale(location = "br") +
+      ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile_poly.pdf"), width = tw, height = tw / 2)
+  }
+  
+  ## mchi analysis -----------------------------------------------------------
+  # https://lsdtopotools.github.io/LSDTT_documentation/LSDTT_visualisation.html
+  # https://lsdtopotools.github.io/LSDTT_documentation/LSDTT_chi_analysis.html
+  
+  if (to_plot) {
+    
+    ggplot() +
+      geom_point(
+        data = as.data.frame(mchi_sf_zm),
+        aes(x = flow_distance, y = elevation, col = log(m_chi)), size = 0.5
+      ) +
+      geom_point(
+        data = landslides_zm_df,
+        aes(x = flow_distance, y = elevation), col = "red", size = 0.5
+      ) +
+      scale_color_viridis_c(name = expression(log_k[sn])) 
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_mchi_analysis.png"), width = tw, height = tw / 2)
+  }
+}
+
+
+
+# names(bbox_zm) <- c("xmin", "ymin", "xmax", "ymax")
+# landslides_bbox <- st_bbox(bbox_zm, crs = 4326) %>%
+#   st_transform(crs = crs_nepal)
+#
+# mchi_sf_zm <- mchi_sf %>%
+#   st_intersection(st_as_sfc(bbox_zm))
+#
+# ggplot() + gg(data = mchi_sf_zm, aes(color = log(m_chi)),
+#               # geom = "tile",
+#               # alpha = .5,
+#               size = 0.2) +
+#   scale_color_viridis_c() +
+#   geom_sf(data = bnd, col = "red", fill = NA)
+
+
+if (FALSE) {
+  
+  # DEM
+  dem <- rast(here("data", "lsdtt", fdr, "cop30dem.bil")) %>%
+    project(crs_nepal$input)
+  
+  landslides_zm$elevation <- unlist(extract(dem, landslides_zm, ID = FALSE))
+}
+
+# another way of doing it but flow distance to channel is not equal to flow distance at mchi
+if (FALSE) {
+  fd2ch <- rast(here("data", "lsdtt", fdr, "cop30dem_FDTOCHAN.bil")) %>%
+    project(crs_nepal$input)
+  landslides_zm$fd2ch_lds <- extract(fd2ch, landslides_zm)
+  ggplot() +
+    gg(data = 1 / exp(rf2ch_zm$rf2ch_km)) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_near_rf2ch_zm.pdf"), width = tw, height = tw / 2)
+  
+  ggplot() +
+    gg(data = 1 / exp(fd2ch_zm$fd2ch_km)) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_near_fd2ch_zm.pdf"), width = tw, height = tw / 2)
+}

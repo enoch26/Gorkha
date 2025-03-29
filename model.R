@@ -8,6 +8,32 @@ library(future)
 
 # TODO Not including the problematic types from the sumtozero constraint might also help. One can do that with constr=FALSE and supplying an extraconstr argument.
 
+# TODO INLA 1D mesh with RW2 
+# https://github.com/inlabru-org/inlabru/discussions/155
+# https://groups.google.com/g/r-inla-discussion-group/c/CiA4l9zhCMw
+max_ksn_tag <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[2]
+knots <- seq(0, max_ksn_tag, length = 25)
+mesh_ksn <- fm_mesh_1d(knots, interval = c(0, max_ksn_tag), degree = 2, boundary = "free")
+ksn_tag_mapper <- bru_mapper(mesh_ksn, indexed = TRUE)
+
+min_rf2ch <- minmax(rf2ch$rf2ch_km)[1]
+max_rf2ch <- minmax(rf2ch$rf2ch_km)[2]
+knots <- seq(min_rf2ch, max_rf2ch, length = 25)
+mesh_rf2ch <- fm_mesh_1d(knots, interval = c(0, max_rf2ch), degree = 2, boundary = "free")
+rf2ch_mapper <- bru_mapper(mesh_rf2ch, indexed = TRUE)
+
+min_pga_mean <- minmax(pga_mean_raster["pga_mean_exp"])[1]
+max_pga_mean <- minmax(pga_mean_raster["pga_mean_exp"])[2]
+knots <- seq(min_pga_mean, max_pga_mean, length = 25)
+mesh_pga_mean <- fm_mesh_1d(knots, interval = c(min_pga_mean, max_pga_mean), degree = 2, boundary = "free")
+pga_mean_mapper <- bru_mapper(mesh_pga_mean, indexed = TRUE)
+
+min_twi <- minmax(twi["logtwi"])[1]
+max_twi <- minmax(twi["logtwi"])[2]
+knots <- seq(min_twi, max_twi, length = 25)
+mesh_twi <- fm_mesh_1d(knots, interval = c(min_twi, max_twi), degree = 2, boundary = "free")
+twi_mapper <- bru_mapper(mesh_twi, indexed = TRUE)
+
 plan(multicore, workers = 10)
 
 
@@ -63,29 +89,10 @@ e_lu <- rep(0, 1)
 #                                    as.numeric(values(pga_std_raster$pga_std)))^{-2}) +
 
 
-if(JU){
-  mchi <- read.csv(here("data", "lsdtt", fdr, "cop30dem_MChiSegmented.csv"), header = TRUE)
-  mchi_sf <- st_as_sf(mchi, coords = c("longitude", "latitude"), crs = 4326) %>%
-    st_transform(crs = crs_nepal) %>% st_intersection(bnd_out)
-  
-  matern <- inla.spde2.pcmatern(mesh_fm,
-                                prior.range = c(4, 0.1),
-                                prior.sigma = c(2, 0.1)
-  )  
-  
-  cmp_mchi<- ~ mchi_field(main = geometry, model = matern)
-  
-  fml_mchi <- m_chi ~ mchi_field
-  
-  lik_mchi <- bru_obs("Gaussian",
-                      formula = fml_mchi,
-                      data = mchi_sf
-  )
-}
-
-
 cmp_ <- ~ Intercept(1) +
   pga_mean_raster(pga_mean_raster["pga_mean_exp"], model = "linear") +
+  # pga_mean_raster_rw2(pga_mean_raster["pga_mean_exp"], model = "rw2", 
+  #                 mapper = pga_mean_mapper, scale.model = TRUE, constr = TRUE) +
   # pga_mean_raster(pga_mean_raster["pga_mean"], model = "linear") +
   landuse(
     bru_fill_missing(
@@ -142,19 +149,40 @@ cmp_ <- ~ Intercept(1) +
     ),
     model = "linear", prec.linear = 1e-6
   ) +
-  mchi(pred_mchi_terra$rf2ch_mchi_1000, model = "linear") +
-  mchi_(pred_mchi_terra_$rf2ch_mchi_1000_, model = "linear")
+  # log_ksn_tag(ksn_tag$log_cop30dem_channel_tagged_pixels, model = "linear") +
+  ksn_tag(log_ksn_tag, model = "rw2", 
+          mapper = ksn_tag_mapper, scale.model = TRUE, constr = TRUE) +
+  rf2ch(rf2ch["rf2ch_km"], model = "linear") +
+  rf2ch_inv(1 / exp(rf2ch["rf2ch_km"]), model = "linear") +
+  rf2ch_rw2(rf2ch["rf2ch_km"], model = "rw2",
+            mapper = rf2ch_mapper, scale.model = TRUE, constr = TRUE) +
+rf2ch_inv_rw2(1 / exp(rf2ch["rf2ch_km"]), model = "rw2",
+              mapper = rf2ch_mapper, scale.model = TRUE, constr = TRUE) +
+fd2ch(fd2ch["fd2ch_km"], model = "linear") +
+fd2ch_inv(1 / exp(fd2ch["fd2ch_km"]), model = "linear") +
+rf2fr(rf2fr["rf2fr_km"], model = "linear") +
+rf2fr_inv(1 / exp(rf2fr["rf2fr_km"]), model = "linear") +
+fd2fr(fd2fr["fd2fr_km"], model = "linear") +
+fd2fr_inv(1 / exp(fd2fr["fd2fr_km"]), model = "linear") +
+twi(twi["logtwi"], model = "linear")
+# twi(twi["logtwi"], model = "rw2", 
+#     mapper = twi_mapper, scale.model = TRUE, constr = TRUE) 
+  # mchi_(pred_mchi_terra_$rf2ch_mchi_1000_, model = "linear") +
+  # mchi_near(mchi_terra_near$fd2ch_log_mchi, model = "linear") +
+  # mchi_near_(eval_spatial(mchi_terra_near$fd2ch_log_mchi, geometry), model = "const") +
+  # mchi_near_1000(mchi_terra_near$fd2ch_mchi_1000, model = "linear") +
   # relief(dem_terrain_focal["relief"], model = "linear") +
   # relief2(dem_terrain_focal2["relief"], model = "linear") +
-  # rf2ch(rf2ch["rf2ch_km"], model = "linear") +
-  # twi(twi["twi"], model = "linear") +
-  # beta_mchi(
-  #   1,
-  #   mean.linear = 0,
-  #   prec.linear = 1,
-  #   marginal = bru_mapper_marginal(qexp, rate = 1)
-  # ) +
-  # mchi_field(main = geometry, model = matern)
+# beta_mchi(
+#   1,
+#   mean.linear = 0,
+#   prec.linear = 1,
+#   marginal = bru_mapper_marginal(qexp, rate = 1)
+# ) +
+# cov_uncertainty(main = geometry, mapper = bru_get_mapper(matern), model = matern)
+# bru_get_mapper(matern)
+# model = "generic0", Cmatrix = fit_qqsd01 # I do not have the Cmatrix
+# mchi_field(main = geometry, model = matern)
 # slope(dem_terrain_mask["slope"], model = "linear") +
 # asp(dem_terrain_mask["aspect"], model = matern_asp) +
 #   asp_gp(dem_terrain_mask["asp_gp"], model = "rw2", cyclic=TRUE) +
@@ -163,18 +191,59 @@ cmp_ <- ~ Intercept(1) +
 # crv_profile(crv_profile["crv_profile"], model = "linear")
 
 # formula -----------------------------------------------------------------
+fml1a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch
+fml1b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch
+# Mean AE score:  0.4200901 
+# Mean SE score:  0.6815928 
+# Mean DS score:  -1.441686 
+# Mean log score:  0.442881
+fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag 
+fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag
+# Mean AE score:  0.4211382 
+# Mean SE score:  0.6534696 
+# Mean DS score:  -1.407612 
+# Mean log score:  0.4444559 
+
+# not better than fml1
+# fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch + rf2fr
+# fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch + rf2fr
+
+# fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch + fd2fr
+# fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch + fd2fr
+
+fml3a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch_inv 
+fml3b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch_inv
+# Mean AE score:  0.420108 
+# Mean SE score:  0.6803675 
+# Mean DS score:  -1.439841 
+# Mean log score:  0.4429099 
 
 
-fml1a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + mchi
-fml1b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + mchi
-fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + mchi_
-fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + mchi_
-if(JU){
-  fml3a <- geometry ~ Intercept + landuse + nepal_geo + beta_mchi * mchi_field
-  fml3b <- logarea_m2 ~ Intercept + landuse_ + nepal_geo_ + beta_mchi * mchi_field
-}
-# fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + crv_planform + crv_profile
-# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + crv_planform + crv_profile
+fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch
+fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch
+# Mean AE score:  0.4192418 
+# Mean SE score:  0.7150837 
+# Mean DS score:  -1.478351 
+# Mean log score:  0.4414419 
+
+fml5a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch_inv
+fml5b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch_inv
+# Mean AE score:  0.4195739 
+#  Mean SE score:  0.7235325 
+#  Mean DS score:  -1.471966 
+#  Mean log score:  0.4416931 
+
+# only add extra noises for sheer ksn model, make it worse
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + twi
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + twi
+# not better than fml3
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch_inv + rf2fr_inv
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch_inv + rf2fr_inv
+
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch_inv + fd2fr_inv
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch_inv + fd2fr_inv
+
+
 # fml5a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + dem + asp
 # fml5b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + dem + asp
 # fml6a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + asp + crv_planform + crv_profile
@@ -249,7 +318,7 @@ lik2b %<-% {
   )
 }
 
-if(JU){
+if (JU) {
   lik3a %<-% {
     bru_obs(
       formula = fml3a,
@@ -270,25 +339,45 @@ if(JU){
   }
 }
 
-if (FALSE) {
-  lik4a %<-% {
-    bru_obs(
-      formula = fml4a,
-      family = "cp",
-      data = landslides_c,
-      domain = list(
-        geometry = mesh_fm
-      ),
-      samplers = bnd
-    )
-  }
-  lik4b %<-% {
-    bru_obs(
-      formula = fml4b,
-      family = "Gaussian",
-      data = landslides_c
-    )
-  }
+# if(UP){
+lik3a %<-% {
+  bru_obs(
+    formula = fml3a,
+    family = "cp",
+    data = landslides_c,
+    domain = list(
+      geometry = mesh_fm
+    ),
+    samplers = bnd
+  )
+}
+lik3b %<-% {
+  bru_obs(
+    formula = fml3b,
+    family = "Gaussian",
+    data = landslides_c
+  )
+}
+# }
+
+lik4a %<-% {
+  bru_obs(
+    formula = fml4a,
+    family = "cp",
+    data = landslides_c,
+    domain = list(
+      geometry = mesh_fm
+    ),
+    samplers = bnd
+  )
+}
+lik4b %<-% {
+  bru_obs(
+    formula = fml4b,
+    family = "Gaussian",
+    data = landslides_c
+  )
+}
   lik5a %<-% {
     bru_obs(
       formula = fml5a,
@@ -307,6 +396,7 @@ if (FALSE) {
       data = landslides_c
     )
   }
+if (FALSE) {
   lik6a %<-% {
     bru_obs(
       formula = fml6a,
@@ -422,9 +512,9 @@ if (FALSE) {
 # fit1 --------------------------------------------------------------------
 # https://grantmcdermott.com/ds4e/parallel.html
 
-if (file.exists(here("RDS", "fit1a.RDS"))) {
+if (file.exists(here("RDS", paste0("fit1a", nm_chess, ".RDS")))) {
   fit1a %<-% {
-    readRDS(here("RDS", "fit1a.RDS"))
+    readRDS(here("RDS", paste0("fit1a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -437,12 +527,12 @@ if (file.exists(here("RDS", "fit1a.RDS"))) {
     )
   }
   # })
-  saveRDS(fit1a, file = here("RDS", "fit1a.RDS"))
+  saveRDS(fit1a, file = here("RDS", paste0("fit1a", nm_chess, ".RDS")))
 }
 
-if (file.exists(here("RDS", "fit1b.RDS"))) {
+if (file.exists(here("RDS", paste0("fit1b", nm_chess, ".RDS")))) {
   fit1b %<-% {
-    readRDS(here("RDS", "fit1b.RDS"))
+    readRDS(here("RDS", paste0("fit1b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -455,14 +545,14 @@ if (file.exists(here("RDS", "fit1b.RDS"))) {
     )
   }
   # })
-  saveRDS(fit1b, file = here("RDS", "fit1b.RDS"))
+  saveRDS(fit1b, file = here("RDS", paste0("fit1b", nm_chess, ".RDS")))
 }
 
 # fit2 --------------------------------------------------------------------
 
-if (file.exists(here("RDS", "fit2a.RDS"))) {
+if (file.exists(here("RDS", paste0("fit2a", nm_chess, ".RDS")))) {
   fit2a %<-% {
-    readRDS(here("RDS", "fit2a.RDS"))
+    readRDS(here("RDS", paste0("fit2a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -476,12 +566,12 @@ if (file.exists(here("RDS", "fit2a.RDS"))) {
     )
   }
   # })
-  saveRDS(fit2a, file = here("RDS", "fit2a.RDS"))
+  saveRDS(fit2a, file = here("RDS", paste0("fit2a", nm_chess, ".RDS")))
 }
 
-if (file.exists(here("RDS", "fit2b.RDS"))) {
+if (file.exists(here("RDS", paste0("fit2b", nm_chess, ".RDS")))) {
   fit2b %<-% {
-    readRDS(here("RDS", "fit2b.RDS"))
+    readRDS(here("RDS", paste0("fit2b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -494,17 +584,17 @@ if (file.exists(here("RDS", "fit2b.RDS"))) {
     )
   }
   # })
-  saveRDS(fit2b, file = here("RDS", "fit2b.RDS"))
+  saveRDS(fit2b, file = here("RDS", paste0("fit2b", nm_chess, ".RDS")))
 }
 
 
 
 ### fit3 --------------------------------------------------------------------
 
-if(JU){
-  if (file.exists(here("RDS", "fit3a.RDS"))) {
+if (JU) {
+  if (file.exists(here("RDS", paste0("fit3a", nm_chess, ".RDS")))) {
     fit3a %<-% {
-      readRDS(here("RDS", "fit3a.RDS"))
+      readRDS(here("RDS", paste0("fit3a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -517,14 +607,14 @@ if(JU){
       )
     }
     # })
-    saveRDS(fit3a, file = here("RDS", "fit3a.RDS"))
+    saveRDS(fit3a, file = here("RDS", paste0("fit3a", nm_chess, ".RDS")))
   }
-  
-  
-  
-  if (file.exists(here("RDS", "fit3b.RDS"))) {
+
+
+
+  if (file.exists(here("RDS", paste0("fit3b", nm_chess, ".RDS")))) {
     fit3b %<-% {
-      readRDS(here("RDS", "fit3b.RDS"))
+      readRDS(here("RDS", paste0("fit3b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -537,58 +627,96 @@ if(JU){
       )
     }
     # })
-    saveRDS(fit3b, file = here("RDS", "fit3b.RDS"))
+    saveRDS(fit3b, file = here("RDS", paste0("fit3b", nm_chess, ".RDS")))
   }
 }
 
-if (FALSE) {
-  ### fit4 --------------------------------------------------------------------
-
-
-  if (file.exists(here("RDS", "fit4a.RDS"))) {
-    fit4a %<-% {
-      readRDS(here("RDS", "fit4a.RDS"))
-    }
-  } else {
-    # system.time({
-    fit4a %<-% {
-      bru(
-        components = cmp_, lik4a,
-        options = list(
-          bru_verbose = 3, bru_max_iter = 100
-        )
-      )
-    }
-    # })
-    saveRDS(fit4a, file = here("RDS", "fit4a.RDS"))
+# if(UP){
+if (file.exists(here("RDS", paste0("fit3a", nm_chess, ".RDS")))) {
+  fit3a %<-% {
+    readRDS(here("RDS", paste0("fit3a", nm_chess, ".RDS")))
   }
-
-
-  if (file.exists(here("RDS", "fit4b.RDS"))) {
-    fit4b %<-% {
-      readRDS(here("RDS", "fit4b.RDS"))
-    }
-  } else {
-    # system.time({
-    fit4b %<-% {
-      bru(
-        components = cmp_, lik4b,
-        options = list(
-          bru_verbose = 3, bru_max_iter = 100
-        )
+} else {
+  # system.time({
+  fit3a %<-% {
+    bru(
+      components = cmp_, lik3a,
+      options = list(
+        bru_verbose = 3, bru_max_iter = 100
       )
-    }
-    # })
-    saveRDS(fit4b, file = here("RDS", "fit4b.RDS"))
+    )
   }
+  # })
+  saveRDS(fit3a, file = here("RDS", paste0("fit3a", nm_chess, ".RDS")))
+}
 
+
+
+if (file.exists(here("RDS", paste0("fit3b", nm_chess, ".RDS")))) {
+  fit3b %<-% {
+    readRDS(here("RDS", paste0("fit3b", nm_chess, ".RDS")))
+  }
+} else {
+  # system.time({
+  fit3b %<-% {
+    bru(
+      components = cmp_, lik3b,
+      options = list(
+        bru_verbose = 3, bru_max_iter = 100
+      )
+    )
+  }
+  # })
+  saveRDS(fit3b, file = here("RDS", paste0("fit3b", nm_chess, ".RDS")))
+}
+# }
+
+### fit4 --------------------------------------------------------------------
+
+
+if (file.exists(here("RDS", paste0("fit4a", nm_chess, ".RDS")))) {
+  fit4a %<-% {
+    readRDS(here("RDS", paste0("fit4a", nm_chess, ".RDS")))
+  }
+} else {
+  # system.time({
+  fit4a %<-% {
+    bru(
+      components = cmp_, lik4a,
+      options = list(
+        bru_verbose = 3, bru_max_iter = 100
+      )
+    )
+  }
+  # })
+  saveRDS(fit4a, file = here("RDS", paste0("fit4a", nm_chess, ".RDS")))
+}
+
+
+if (file.exists(here("RDS", paste0("fit4b", nm_chess, ".RDS")))) {
+  fit4b %<-% {
+    readRDS(here("RDS", paste0("fit4b", nm_chess, ".RDS")))
+  }
+} else {
+  # system.time({
+  fit4b %<-% {
+    bru(
+      components = cmp_, lik4b,
+      options = list(
+        bru_verbose = 3, bru_max_iter = 100
+      )
+    )
+  }
+  # })
+  saveRDS(fit4b, file = here("RDS", paste0("fit4b", nm_chess, ".RDS")))
+}
 
   ### fit5 --------------------------------------------------------------------
 
 
-  if (file.exists(here("RDS", "fit5a.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit5a", nm_chess, ".RDS")))) {
     fit5a %<-% {
-      readRDS(here("RDS", "fit5a.RDS"))
+      readRDS(here("RDS", paste0("fit5a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -601,14 +729,14 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit5a, file = here("RDS", "fit5a.RDS"))
+    saveRDS(fit5a, file = here("RDS", paste0("fit5a", nm_chess, ".RDS")))
   }
 
 
 
-  if (file.exists(here("RDS", "fit5b.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit5b", nm_chess, ".RDS")))) {
     fit5b %<-% {
-      readRDS(here("RDS", "fit5b.RDS"))
+      readRDS(here("RDS", paste0("fit5b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -621,15 +749,16 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit5b, file = here("RDS", "fit5b.RDS"))
+    saveRDS(fit5b, file = here("RDS", paste0("fit5b", nm_chess, ".RDS")))
   }
 
   ### fit6 --------------------------------------------------------------------
+if (FALSE) {
 
 
-  if (file.exists(here("RDS", "fit6a.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit6a", nm_chess, ".RDS")))) {
     fit6a %<-% {
-      readRDS(here("RDS", "fit6a.RDS"))
+      readRDS(here("RDS", paste0("fit6a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -642,12 +771,12 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit6a, file = here("RDS", "fit6a.RDS"))
+    saveRDS(fit6a, file = here("RDS", paste0("fit6a", nm_chess, ".RDS")))
   }
 
-  if (file.exists(here("RDS", "fit6b.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit6b", nm_chess, ".RDS")))) {
     fit6b %<-% {
-      readRDS(here("RDS", "fit6b.RDS"))
+      readRDS(here("RDS", paste0("fit6b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -660,7 +789,7 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit6b, file = here("RDS", "fit6b.RDS"))
+    saveRDS(fit6b, file = here("RDS", paste0("fit6b", nm_chess, ".RDS")))
   }
 
 
@@ -668,9 +797,9 @@ if (FALSE) {
   ### fit7 --------------------------------------------------------------------
 
 
-  if (file.exists(here("RDS", "fit7a.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit7a", nm_chess, ".RDS")))) {
     fit7a %<-% {
-      readRDS(here("RDS", "fit7a.RDS"))
+      readRDS(here("RDS", paste0("fit7a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -683,13 +812,13 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit7a, file = here("RDS", "fit7a.RDS"))
+    saveRDS(fit7a, file = here("RDS", paste0("fit7a", nm_chess, ".RDS")))
   }
 
 
-  if (file.exists(here("RDS", "fit7b.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit7b", nm_chess, ".RDS")))) {
     fit7b %<-% {
-      readRDS(here("RDS", "fit7b.RDS"))
+      readRDS(here("RDS", paste0("fit7b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -702,16 +831,16 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit7b, file = here("RDS", "fit7b.RDS"))
+    saveRDS(fit7b, file = here("RDS", paste0("fit7b", nm_chess, ".RDS")))
   }
 
 
   ### fit8 --------------------------------------------------------------------
 
 
-  if (file.exists(here("RDS", "fit8a.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit8a", nm_chess, ".RDS")))) {
     fit8a %<-% {
-      readRDS(here("RDS", "fit8a.RDS"))
+      readRDS(here("RDS", paste0("fit8a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -724,14 +853,14 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit8a, file = here("RDS", "fit8a.RDS"))
+    saveRDS(fit8a, file = here("RDS", paste0("fit8a", nm_chess, ".RDS")))
   }
 
 
 
-  if (file.exists(here("RDS", "fit8b.RDS"))) {
+  if (file.exists(here("RDS", paste0("fit8b", nm_chess, ".RDS")))) {
     fit8b %<-% {
-      readRDS(here("RDS", "fit8b.RDS"))
+      readRDS(here("RDS", paste0("fit8b", nm_chess, ".RDS")))
     }
   } else {
     system.time({
@@ -744,16 +873,16 @@ if (FALSE) {
         )
       }
     })
-    saveRDS(fit8b, file = here("RDS", "fit8b.RDS"))
+    saveRDS(fit8b, file = here("RDS", paste0("fit8b", nm_chess, ".RDS")))
   }
 }
 
 ### fit9 --------------------------------------------------------------------
 
 
-# if (file.exists(here("RDS", "fit9a.RDS"))) {
+# if (file.exists(here("RDS", paste0("fit9a", nm_chess, ".RDS")))) {
 #   fit9a %<-% {
-#     readRDS(here("RDS", "fit9a.RDS"))
+#     readRDS(here("RDS", paste0("fit9a", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -766,14 +895,14 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit9a, file = here("RDS", "fit9a.RDS"))
+#   saveRDS(fit9a, file = here("RDS", paste0("fit9a", nm_chess, ".RDS")))
 # }
 #
 #
 #
-# if (file.exists(here("RDS", "fit9b.RDS"))) {
+# if (file.exists(here("RDS", paste0("fit9b", nm_chess, ".RDS")))) {
 #   fit9b %<-% {
-#     readRDS(here("RDS", "fit9b.RDS"))
+#     readRDS(here("RDS", paste0("fit9b", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -786,15 +915,15 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit9b, file = here("RDS", "fit9b.RDS"))
+#   saveRDS(fit9b, file = here("RDS", paste0("fit9b", nm_chess, ".RDS")))
 # }
 
 
 # # fit10 -------------------------------------------------------------------
 #
-# if (file.exists(here("RDS", "fit10a.RDS"))) {
+# if (file.exists(here("RDS", paste0("fit10a", nm_chess, ".RDS")))) {
 #   fit10a %<-% {
-#     readRDS(here("RDS", "fit10a.RDS"))
+#     readRDS(here("RDS", paste0("fit10a", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -807,13 +936,13 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit10a, file = here("RDS", "fit10a.RDS"))
+#   saveRDS(fit10a, file = here("RDS", paste0("fit10a", nm_chess, ".RDS")))
 # }
 #
 #
-# if (file.exists(here("RDS", "fit10b.RDS"))) {
+# if (file.exists(here("RDS", paste0("fit10b", nm_chess, ".RDS")))) {
 #   fit10b %<-% {
-#     readRDS(here("RDS", "fit10b.RDS"))
+#     readRDS(here("RDS", paste0("fit10b", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -826,14 +955,14 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit10b, file = here("RDS", "fit10b.RDS"))
+#   saveRDS(fit10b, file = here("RDS", paste0("fit10b", nm_chess, ".RDS")))
 # }
 #
 # # fit11 -------------------------------------------------------------------
 #
-# if (file.exists(here("RDS", "fit11a.RDS"))) {
+# if (file.exists(here("RDS", paste0("fit11a", nm_chess, ".RDS")))) {
 #   fit11a %<-% {
-#     readRDS(here("RDS", "fit11a.RDS"))
+#     readRDS(here("RDS", paste0("fit11a", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -846,14 +975,14 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit11a, file = here("RDS", "fit11a.RDS"))
+#   saveRDS(fit11a, file = here("RDS", paste0("fit11a", nm_chess, ".RDS")))
 # }
 #
 #
 #
-# if (file.exists(here("RDS", "fit11b.RDS"))) {
+# if (file.exists(here("RDS", paste0("fit11b", nm_chess, ".RDS")))) {
 #   fit11b %<-% {
-#     readRDS(here("RDS", "fit11b.RDS"))
+#     readRDS(here("RDS", paste0("fit11b", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -866,7 +995,7 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit11b, file = here("RDS", "fit11b.RDS"))
+#   saveRDS(fit11b, file = here("RDS", paste0("fit11b", nm_chess, ".RDS")))
 # }
 #
 
@@ -886,3 +1015,43 @@ plan(sequential)
 #   ), # either total size, or a numeric vector with sample sizes for each feature geometry.
 #   crs = fm_crs(bnd)
 # )
+
+
+# model not working -------------------------------------------------------
+
+
+
+# The joint mode is not where you wanna have, therefore it does not work
+# if (JU) {
+#   fml3a <- geometry ~ Intercept + landuse + nepal_geo + beta_mchi * mchi_field
+#   fml3b <- geometry ~ Intercept + landuse + nepal_geo_ + beta_mchi * mchi_field
+# }
+# Have to specify the Cmatrix to make it work
+# if (UP) {
+#   fml3a <- geometry ~ Intercept + landuse + nepal_geo + beta_mchi * (mchi_near_ + cov_uncertainty)
+#   fml3b <- logarea_m2 ~ Intercept + landuse_ + nepal_geo_ + beta_mchi * (mchi_near_ + cov_uncertainty)
+# }
+if(FALSE){
+  
+  if (JU) {
+    # this defo not work Finn said
+    mchi <- read.csv(here("data", "lsdtt", fdr, "cop30dem_MChiSegmented.csv"), header = TRUE)
+    mchi_sf <- st_as_sf(mchi, coords = c("longitude", "latitude"), crs = 4326) %>%
+      st_transform(crs = crs_nepal) %>%
+      st_intersection(bnd_out)
+    
+    matern <- inla.spde2.pcmatern(mesh_fm,
+                                  prior.range = c(4, 0.1),
+                                  prior.sigma = c(2, 0.1)
+    )
+    
+    cmp_mchi <- ~ mchi_field(main = geometry, model = matern)
+    
+    fml_mchi <- m_chi ~ mchi_field
+    
+    lik_mchi <- bru_obs("Gaussian",
+                        formula = fml_mchi,
+                        data = mchi_sf
+    )
+  }
+}

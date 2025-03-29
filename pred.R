@@ -42,6 +42,12 @@ fml_lambda <- function(fml){
   } else {
     tt1 <- tt
   }
+  # if (any(stringr::str_detect(tt, "beta"))) {
+  #   tt1 <- tt
+  #   tt1[stringr::str_detect(tt1, "beta")] <- ""
+  # } else {
+  #   tt1 <- tt
+  # }
   as.formula(paste0(" ~ list(", "lambda = exp(", ff, "),", 
                     "log_lambda = ", ff, 
                     paste(",", tt1, "=", tt, collapse = ""), ")"))
@@ -111,7 +117,6 @@ fp2b %<-% {
   )
 }
 
-
 fp3a %<-% {
   predict(fit3a,
           newdata = pxl,
@@ -127,7 +132,7 @@ fp3b %<-% {
           n.samples = 100, seed = seed[1]
   )
 }
-if(FALSE){
+
 fp4a %<-% {
   predict(fit4a,
           newdata = pxl,
@@ -160,6 +165,7 @@ fp5b %<-% {
   )
 }
 
+if(FALSE){
 fp6a %<-% {
   predict(fit6a,
           newdata = pxl,
@@ -210,14 +216,14 @@ fp8b %<-% {
 }
 plan(sequential)
 
-# > ls( pattern = "fit")
+# > ls( pattern = "fit.ca")
 # [1] "fit1a" "fit1b" "fit2a" "fit2b"
 
 mod_names_a <- c(
-  "fit1a", "fit2a"
-  # "fit3a"
-  # "fit4a",
-  # "fit5a",
+  "fit1a", "fit2a",
+  "fit3a",
+  "fit4a",
+  "fit5a",
   # "fit6a",
   # "fit7a",
   # "fit8a"
@@ -225,10 +231,10 @@ mod_names_a <- c(
   # "fit10a", "fit11a"
 )
 mod_names_b <- c(
-  "fit1b", "fit2b"
-  # "fit3b"
-  # "fit4b",
-  # "fit5b",
+  "fit1b", "fit2b",
+  "fit3b",
+  "fit4b",
+  "fit5b",
   # "fit6b",
   # "fit7b",
   # "fit8b"
@@ -236,10 +242,10 @@ mod_names_b <- c(
   # "fit10b", "fit11b"
 )
 pred_lst_a <- c(
-  "fp1a", "fp2a"
-  # "fp3a"
-  # "fp4a",
-  # "fp5a",
+  "fp1a", "fp2a",
+  "fp3a",
+  "fp4a",
+  "fp5a",
   # "fp6a",
   # "fp7a",
   # "fp8a"
@@ -247,10 +253,10 @@ pred_lst_a <- c(
   # "fp10a", "fp11a"
 )
 pred_lst_b <- c(
-  "fp1b", "fp2b"
-  # "fp3b"
-  # "fp4b",
-  # "fp5b",
+  "fp1b", "fp2b",
+  "fp3b",
+  "fp4b",
+  "fp5b",
   # "fp6b",
   # "fp7b",
   # "fp8b"
@@ -287,7 +293,7 @@ if (to_plot) {
     wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
-    ggsave(paste0("figures/model/", pred_lst_a[i], "_lds.pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lds.pdf"), width = tw, height = 1.25 * tw)
   }
 }
 
@@ -310,7 +316,7 @@ if (to_plot) {
     wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
-    ggsave(paste0("figures/model/", pred_lst_a[i], ".pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, ".pdf"), width = tw, height = 1.25 * tw)
   }
 }
 
@@ -357,7 +363,7 @@ if (to_plot) {
     wrap_plots(p_lst_alambda, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
     print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2, 1, 3)])))
-    ggsave(paste0("figures/model/", pred_lst_a[i], "_lambda.pdf"), width = tw, height = tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lambda.pdf"), width = tw, height = tw)
   }
 }
 
@@ -426,7 +432,7 @@ if (to_plot) {
     wrap_plots(p_lst_b, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
-    ggsave(paste0("figures/model/", pred_lst_b[i], "_nolds.pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, "_nolds.pdf"), width = tw, height = 1.25 * tw)
   }
 }
 
@@ -458,6 +464,155 @@ if (to_plot) {
 #   }
 # }
 
+
+# RW2 ---------------------------------------------------------------------
+
+for(i in c(mod_names_a, mod_names_b)){
+  ksn_tag_pred <- predict(
+    get(i),
+    data.frame(log_ksn_tag = seq(0, max_ksn_tag, length.out = 1000)),
+    formula = ~ ksn_tag_eval(log_ksn_tag)
+  )
+  
+  # debug: mapper_val[[part]] <- input_eval(component[[part]]$input, data, 
+  #                                         env = component$env, label = part, ...)
+  # Browse[1]> str(component[[part]]$input)                                                                                                                        
+  # List of 4
+  # $ input   : language ksn_tag$log_cop30dem_channel_tagged_pixels
+  # $ label   : chr "ksn_tag"
+  # $ layer   : NULL
+  # $ selector: NULL
+  # - attr(*, "class")= chr "bru_input"
+  # 
+  # 
+  # Warning in handle_problems(e_input) :
+  #   The input evaluation 'ksn_tag$log_cop30dem_channel_tagged_pixels' for 'ksn_tag' failed. Perhaps the data object doesn't contain the needed variables? Falling back to '1'.
+  
+  
+  ggplot(ksn_tag_pred) +
+    geom_line(aes(log_ksn_tag, mean)) +
+    geom_ribbon(
+      aes(log_ksn_tag,
+          ymin = q0.025,
+          ymax = q0.975
+      ),
+      alpha = 0.2
+    ) +
+    geom_ribbon(
+      aes(log_ksn_tag,
+          ymin = mean - 1 * sd,
+          ymax = mean + 1 * sd
+      ),
+      alpha = 0.2
+    )
+  
+  ggsave(here("figures", "model", paste0(i, "ksn_tag_rw2", nm_chess, ".pdf")), width = tw, height = tw / 2)
+  
+  pga_mean_pred <- predict(
+    get(i),
+    data.frame(pga_mean_ = seq(min_pga_mean, max_pga_mean, length.out = 1000)),
+    formula = ~ pga_mean_raster_eval(pga_mean_)
+  )
+  
+  # debug: mapper_val[[part]] <- input_eval(component[[part]]$input, data, 
+  #                                         env = component$env, label = part, ...)
+  # Browse[1]> str(component[[part]]$input)                                                                                                                        
+  # List of 4
+  # $ input   : language pga_mean$log_cop30dem_channel_tagged_pixels
+  # $ label   : chr "pga_mean"
+  # $ layer   : NULL
+  # $ selector: NULL
+  # - attr(*, "class")= chr "bru_input"
+  # 
+  # 
+  # Warning in handle_problems(e_input) :
+  #   The input evaluation 'pga_mean$log_cop30dem_channel_tagged_pixels' for 'pga_mean' failed. Perhaps the data object doesn't contain the needed variables? Falling back to '1'.
+  
+  
+  ggplot(pga_mean_pred) +
+    geom_line(aes(pga_mean_, mean)) +
+    geom_ribbon(
+      aes(pga_mean_,
+          ymin = q0.025,
+          ymax = q0.975
+      ),
+      alpha = 0.2
+    ) +
+    geom_ribbon(
+      aes(pga_mean_,
+          ymin = mean - 1 * sd,
+          ymax = mean + 1 * sd
+      ),
+      alpha = 0.2
+    )
+  
+  ggsave(here("figures", "model", paste0(i, "pga_mean_rw2", nm_chess, ".pdf")), width = tw, height = tw / 2)
+
+}
+
+  # rf2ch
+  
+  mod_names_a <- "fit4a"
+  mod_names_b <- "fit4b"
+  for(i in c(mod_names_a, mod_names_b)){
+    rf2ch_pred <- predict(
+      get(i),
+      data.frame(rf2ch_ = seq(0, 4.72, length.out = 1000)),
+      formula = ~ rf2ch_rw2_eval(rf2ch_)
+    )
+    
+    ggplot(rf2ch_pred) +
+      geom_line(aes(rf2ch_, mean)) +
+      geom_ribbon(
+        aes(rf2ch_,
+            ymin = q0.025,
+            ymax = q0.975
+        ),
+        alpha = 0.2
+      ) +
+      geom_ribbon(
+        aes(rf2ch_,
+            ymin = mean - 1 * sd,
+            ymax = mean + 1 * sd
+        ),
+        alpha = 0.2
+      )
+    
+    ggsave(here("figures", "model", paste0(i, "rf2ch_rw2", nm_chess, ".pdf")), width = tw, height = tw / 2)
+    
+  }
+  if(FALSE){
+  mod_names_a <- "fit3a"
+  mod_names_b <- "fit3b"
+  for(i in c(mod_names_a, mod_names_b)){
+    rf2ch_inv_pred <- predict(
+      get(i),
+      data.frame(rf2ch_inv_ = seq(0, 4.72, length.out = 1000)),
+      formula = ~ rf2ch_inv_rw2_eval(rf2ch_inv_)
+    )
+    
+    ggplot(rf2ch_inv_pred) +
+      geom_line(aes(rf2ch_inv_, mean)) +
+      geom_ribbon(
+        aes(rf2ch_inv_,
+            ymin = q0.025,
+            ymax = q0.975
+        ),
+        alpha = 0.2
+      ) +
+      geom_ribbon(
+        aes(rf2ch_inv_,
+            ymin = mean - 1 * sd,
+            ymax = mean + 1 * sd
+        ),
+        alpha = 0.2
+      )
+    
+    ggsave(here("figures", "model", paste0(i, "rf2ch_inv_rw2", nm_chess, ".pdf")), width = tw, height = tw / 2)
+    
+  }
+
+}
 
 # txt summary output ------------------------------------------------------
 
@@ -510,6 +665,28 @@ sink()
 #
 
 plan(sequential)
+
+
+
+# train and test ----------------------------------------------------------
+
+if(FALSE){
+  newdata 
+  fp1a_terra <- rasterize(vect(fp1a$lambda["mean"]), field="mean", pxl_terra, fun = "mean")
+  
+  
+  pxl_terra$fp1a_se <- (pxl_terra$count - fp1a_terra$mean)^2
+  
+  post_E <- get("mean", pred)
+  post_Var <- post_E + (get("sd", pred))^2
+  pred$SE_score <- SE_score <- (pxl_terra$count - post_E)^2
+  pred$DS_score <- DS_score <- SE_score / post_Var + log(post_Var)
+  
+  post_Var <- pred$mean + pred$sd^2
+  SE_score <- (bnd_mesh$count - post_E)^2
+  DS_score <- (bnd_mesh$count - post_E)^2 / post_Var + log(post_Var)
+  
+}
 
 # future.apply ------------------------------------------------------------
 # TODO automated prediction but too large memory as a list

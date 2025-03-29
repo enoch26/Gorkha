@@ -1,27 +1,3 @@
-# Covariate deterministic function ----------------------------------------
-
-
-cov_fun <- function(x, y) {
-  (x^2 - y^2) * exp(-.5 * x^2 - .5 * y^2)
-  # ((2 * x)^2 + 2 * y) * exp(-.5 * x^2 - .5 * y^2)
-}
-
-
-# Nonlinear transformation function ---------------------------------------
-
-
-exp_nl <- function(x) (exp(a * x) - c_) / b # -1 to sthelse 20240627
-
-
-
-# invert scale ------------------------------------------------------------
-
-inv_scale <- function(x, xmin, xmax, xmin_new, xmax_new) {
-  x_new <- (x - xmin) / (xmax - xmin) * (xmax_new - xmin_new) + xmin_new
-  return(x_new)
-}
-
-
 # hexagon lattice  --------------------------------------------------------
 
 
@@ -159,11 +135,53 @@ hexagon_lattice <- function(bnd = bnd,
 #   segm2
 # }
 
+
+
+# log_score ---------------------------------------------------------------
+
+log_score <- function(object,
+                      newdata,
+                      # formula = NULL,
+                      n.samples = 100,
+                      # data_obs = "lambda",
+                      test_obs = "count",
+                      # inla.link = NULL,
+                      seed = NULL,
+                      plot = FALSE,
+                      ...){
+  fml <- object$bru_info$lhoods[[1]]$formula
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  formula_ <- as.formula(paste0(" ~ dpois(", test_obs, ", lambda = exp(", ff, "))"))
+  # pxl[obs] <- as.points(pxl_terra[obs])
+  pred <- predict(object,
+                  newdata = newdata,
+                  formula = formula_,
+                  n.samples = n.samples
+  )
+  pred$LS <- -log(pred$mean)
+  return(pred)
+}
+
+
+# sf2sr -------------------------------------------------------------------
+# Convert sf points object from predict.bru() to Spatraster object
+# x: sf points object, usually from predict(..., fm_pixel(..., format = "sf"))
+# y: Spatraster object, usually from fm_pixel(..., format = "terra")
+sf2sr <- function(x, y, field = "mean", fun = "mean"){
+  rasterize(vect(x[field]), field = field, y, fun = fun)
+}
+
 # score -------------------------------------------------------------------
+
+## sf -------------------------------------------------------------------
+
+
 # TODO extend to list of formulae, too much for a function, probably give up
 # TODO for a list of bru objects with the same formula to compare the SE and DS score
 # A function to compute the SE and DS score for bru object(s)
-# obs: the response name in the newdata to compare with the prediction
+# newdata: sf points object from fm_pixel(mesh,...)
+# testdata: test data in Spatraster and ideally same resolution as the newdata, otherwise mean across cells is assumed
+# obs: the response name in the newdata/testdata to compare with the prediction
 # formula(e): the formula to predict the response;
 #             if NULL, the formula in the model is used;
 #             TODO for a list of formulae
@@ -174,11 +192,11 @@ hexagon_lattice <- function(bnd = bnd,
 # to inverse the prediction
 # set seed issue: https://github.com/inlabru-org/inlabru/issues/88
 # now only work for Gaussian (and Poisson, because Poisson we can turn in Gaussian)
-dse_score <- function(object,
+score <- function(object,
                       newdata = NULL,
                       formula = NULL,
                       n.samples = 100,
-                      obs = "lambda",
+                      obs = "count",
                       inla.link = NULL,
                       seed = NULL,
                       plot = FALSE,
@@ -224,14 +242,177 @@ dse_score <- function(object,
   }
 
   # Use the above seed to reproduce the same result and into the predict call
-  if (is.null(formula)) {
-    # TODO auto detect matching (maybe) object$bru_info$lhoods[[1]]$inla.family
-    # TODO user to provide .block in newdata
-    formula <- object$bru_info$lhoods[[1]]$formula
-    formula <- as.formula(paste0(
-      "~ inla.link.", inla.link,
-      "(", labels(terms(formula)), ", inverse = TRUE)"
-    ))
+  if(FALSE){
+    if (is.null(formula)) {
+      # TODO auto detect matching (maybe) object$bru_info$lhoods[[1]]$inla.family
+      # TODO user to provide .block in newdata
+      if(FALSE){
+        formula <- object$bru_info$lhoods[[1]]$formula
+        formula <- as.formula(paste0(
+          "~ inla.link.", inla.link,
+          "(", labels(terms(formula)), ", inverse = TRUE)"
+        ))
+      }
+  }
+    
+
+  }
+
+  #################################################################
+  fml <- object$bru_info$lhoods[[1]]$formula
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  # formula <- as.formula(paste0(" ~  exp(", ff, ")"))
+  
+  formula <- as.formula(paste(
+    paste0(" ~ {expect <- exp(", ff, ")"),
+    "\n",
+    paste0(
+      "list(expect = expect, obs_prob = dpois(", obs,", lambda = expect))}"
+    )
+  ))
+  
+  pred <- predict(object,
+    newdata = newdata, formula = formula,
+    n.samples = n.samples,
+    seed = seed2,
+    ...
+  )
+  
+  post_E <- get("mean", pred$expect)
+  post_Var <- post_E + (get("sd", pred$expect))^2
+  
+  pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_E)
+  pred$obs_prob$SE <- SE <- (get(obs, newdata) - post_E)^2
+  pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
+  # log score
+  pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
+  
+  AE_mean <- mean(AE, na.rm = TRUE)
+  SE_mean <- mean(SE, na.rm = TRUE)
+  DS_mean <- mean(DS, na.rm = TRUE)
+  LS_mean <- mean(LS, na.rm = TRUE)
+  cat(
+    "Mean AE score: ", AE_mean, "\n",
+    "Mean SE score: ", SE_mean, "\n",
+    "Mean DS score: ", DS_mean, "\n",
+    "Mean log score: ", LS_mean, "\n"
+  )
+  
+  # An example of how to plot the SE and DS score
+  if (plot) {
+    p1 <- ggplot() +
+      gg(data = pred["SE"], geom = "tile") +
+      ggtitle("Squared Error Score")
+    p2 <- ggplot() +
+      gg(data = pred["DS"], geom = "tile") +
+      ggtitle("Dawid-Sebastiani Score")
+    print(p1)
+    print(p2)
+    # Collect the plots
+    # print(p1 / p2 + patchwork::plot_layout(guides = "collect"))
+  }
+  # https://stackoverflow.com/questions/28300713/how-and-when-should-i-use-on-exit
+
+  return(list(
+    pred = pred,
+    mean_score = tibble::tibble(
+      AE_mean = AE_mean,
+      SE_mean = SE_mean,
+      DS_mean = DS_mean,
+      LS_mean = LS_mean
+    )
+    # score = tibble::tibble(SE = SE, DS = DS)
+    # cbind for user
+    # plot = list(p1,p2)
+  ))
+}
+
+
+## terra ----------------------------------------------------------------------
+
+
+# TODO extend to list of formulae, too much for a function, probably give up
+# TODO for a list of bru objects with the same formula to compare the SE and DS score
+# A function to compute the SE and DS score for bru object(s)
+# newdata: sf points object from fm_pixel(mesh,...)
+# testdata: test data in Spatraster and ideally same resolution as the newdata, otherwise mean across cells is assumed
+# obs: the response name in the newdata/testdata to compare with the prediction
+# formula(e): the formula to predict the response;
+#             if NULL, the formula in the model is used;
+#             TODO for a list of formulae
+# seed: seed for reproducibility in the the global seed and prediction;
+#       seed restored after the computation
+# plot: logical, whether to plot the SE and DS score
+# inla.link: the INLA link function suffix (can be found in INLA::link), eg "log"
+# to inverse the prediction
+# set seed issue: https://github.com/inlabru-org/inlabru/issues/88
+# now only work for Gaussian (and Poisson, because Poisson we can turn in Gaussian)
+dse_score_terra <- function(object,
+                      newdata = NULL,
+                      testdata = NULL, 
+                      formula = NULL,
+                      n.samples = 100,
+                      # data_obs = "lambda",
+                      test_obs = "count",
+                      inla.link = NULL,
+                      seed = NULL,
+                      plot = FALSE,
+                      ...) {
+  # old_seed <- .Random.seed
+  # on.exit(expr = {
+  #   .Random.seed <- old_seed
+  # }, add = TRUE) # restore the seed
+  # if the second one is not provided, generate the second seed for reproducibility.
+  # check the vector of seed len 2
+
+  if (length(seed) > 2) {
+    stop("At most two seeds should be provided")
+  }
+
+  if (length(seed) >= 1) {
+    set.seed(seed[1])
+  }
+
+  if (length(seed) >= 2) {
+    seed2 <- seed[2]
+  } else {
+    seed2 <- as.integer(runif(1) * .Machine$integer.max) # this is how INLA set seed
+  }
+
+  # TODO check multiple likelihood here
+  # ask user which likelihood to pick
+  # https://stackoverflow.com/questions/11007178/creating-a-prompt-answer-system-to-input-data-into-r
+  # expected to be single character class
+  # TODO should stop and ask question which likelihood to take
+  if (is.null(inla.link)) {
+    inla.link <- object$misc$linkfunctions[["names"]] # TODO what if multiple likelihood
+    if (length(inla.link) > 1) {
+      # stop(paste0("Multiple link functions (",
+      #             paste0(inla.link, collapse = ", "),
+      #             ") detected. Please provide an inla.link argument"))
+      warning(paste0(
+        "Multiple link functions (",
+        paste0(inla.link, collapse = ", "),
+        ") detected. Please provide an inla.link argument"
+      ))
+    }
+  }
+
+  # Use the above seed to reproduce the same result and into the predict call
+  if(FALSE){
+    if (is.null(formula)) {
+      # TODO auto detect matching (maybe) object$bru_info$lhoods[[1]]$inla.family
+      # TODO user to provide .block in newdata
+      if(FALSE){
+        formula <- object$bru_info$lhoods[[1]]$formula
+        formula <- as.formula(paste0(
+          "~ inla.link.", inla.link,
+          "(", labels(terms(formula)), ", inverse = TRUE)"
+        ))
+      }
+  }
+    
+
   }
 
   # an old way to get the predictor
@@ -263,19 +444,26 @@ dse_score <- function(object,
   # } else {
   #   stop("Only lambda is supported for now")
   # }
+  
+  #################################################################
+  fml <- object$bru_info$lhoods[[1]]$formula
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  formula <- as.formula(paste0(" ~  exp(", ff, ")"))
+  
   pred <- predict(object,
     newdata = newdata, formula = formula,
     n.samples = n.samples,
     seed = seed2,
     ...
   )
-  post_E <- get("mean", pred)
-  post_Var <- (get("sd", pred))^2
-  # TODO this only applies to Poisson lambda/ Gaussian mean, count needa add post_E to the variance, other cases need to do case by case, forget it.
-  pred$SE_score <- SE_score <- (get(obs, newdata) - post_E)^2
-  pred$DS_score <- DS_score <- SE_score / post_Var + log(post_Var)
-  SE_score_mean <- mean(SE_score, na.rm = TRUE)
-  DS_score_mean <- mean(DS_score, na.rm = TRUE)
+  
+  post_E_terra <- sf2sr(x = pred, field = "mean", y = pxl_terra)
+  post_Var_terra <- post_E_terra +  sf2sr(x = pred, field = "sd", y = pxl_terra)^2
+  
+  SE_score_terra <- (testdata[test_obs] - post_E_terra)^2
+  DS_score_terra <- SE_score_terra / post_Var_terra + log(post_Var_terra)
+  SE_score_mean <- mean(values(SE_score_terra), na.rm = TRUE)
+  DS_score_mean <- mean(values(DS_score_terra), na.rm = TRUE)
   cat(
     "Mean SE score: ", SE_score_mean, "\n",
     "Mean DS score: ", DS_score_mean, "\n"
@@ -283,10 +471,14 @@ dse_score <- function(object,
   # An example of how to plot the SE and DS score
   if (plot) {
     p1 <- ggplot() +
-      gg(data = pred["SE_score"], geom = "tile") +
+      geom_spatraster(data = SE_score_terra) +
+      scale_fill_viridis_c(na.value = "transparent", trans = "log") +
       ggtitle("Squared Error Score")
+    # ggsave("se_terra.pdf")
     p2 <- ggplot() +
-      gg(data = pred["DS_score"], geom = "tile") +
+      # gg(data = log(DS_score_terra+10)) +
+      gg(data = DS_score_terra) +
+      scale_fill_viridis_c(na.value = "transparent") +
       ggtitle("Dawid-Sebastiani Score")
     print(p1)
     print(p2)
@@ -296,12 +488,12 @@ dse_score <- function(object,
   # https://stackoverflow.com/questions/28300713/how-and-when-should-i-use-on-exit
 
   return(list(
-    pred = pred,
+    # pred = pred,
     mean_score = tibble::tibble(
       SE_score_mean = SE_score_mean,
       DS_score_mean = DS_score_mean
     ),
-    score = tibble::tibble(SE_score = SE_score, DS_score = DS_score)
+    score = list(SE_score_terra = SE_score_terra, DS_score_terra = DS_score_terra)
     # cbind for user
     # plot = list(p1,p2)
   ))
@@ -323,7 +515,8 @@ make_sym <- function(Q) {
 
 # prediction plot ---------------------------------------------------------
 
-
+if(FALSE){
+  
 predict_plot <- function(fit, mesh, n.samples = 100) {
   pxl <- fm_pixels(mesh_fm, dims = c(400, 200), mask = bnd)
 
@@ -338,6 +531,7 @@ predict_plot <- function(fit, mesh, n.samples = 100) {
     scale_fill_viridis_c() +
     geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3)
   ggsave(here("figures", paste0(fit, "pred_pxl.pdf")), width = tw, height = tw / 2)
+}
 }
 
 
@@ -429,3 +623,168 @@ gkernel <- function(mat, norm = TRUE) {
 # kernel2 <- gsignal::conv2(padzeros2d(kernel), kernel, shape = "valid")
 # norm_kernel <- kernel / sum(abs(kernel))
 # norm_kernel2 <- kernel2 / sum(abs(kernel2))
+
+
+# https://stackoverflow.com/questions/65907022/given-a-spatial-hexagonal-grid-how-can-i-obtain-a-sample-of-higher-order-neigh
+# https://cran.r-project.org/web/packages/geostan/vignettes/spatial-weights-matrix.html
+#' ------------------
+#' cv_partition
+#' ------------------
+#'
+#' Partitions the region based on the given criteria for calculating residuals
+#' in each partition. Parts of this function are taken from concepts in
+#' https://rpubs.com/huanfaChen/grid_from_polygon
+#'
+#' Input:
+#' @param samplers A sf object containing region for which
+#' partitions need to be created
+#' @param resolution resolution of the grids that are required
+#' @param nrows number of rows of grids that are required
+#' @param ncols number of columns of grids that are required
+#' @param chess chessboard partitioning
+#' Output:
+#' @return a partitioned sf object as required or a list of partitioned sf objects if chess is TRUE
+#'
+#'
+cv_partition <- function(samplers, resolution = NULL, nrows = NULL, ncols = NULL, 
+                         chess = TRUE) {
+  # Create a grid for the given boundary
+  if (is.null(resolution)) {
+    grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers))),
+                        crs = fm_crs(samplers)$input,
+                        nrows = nrows, ncols = ncols
+    )
+  }
+  
+  if (is.null(c(nrows, ncols))) {
+    grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers))),
+                        crs = fm_crs(samplers)$input,
+                        resolution = resolution
+    )
+  }
+  
+  gridPolygon <- terra::as.polygons(grid)
+  if(chess == TRUE){
+    # no idea how it works
+    # spatSample(x = gridPolygon, size = 0.5*nrow(gridPolygon), method="random", strata=NULL, chess="black")
+    grid_chess <- init(grid, "chess")
+    grid_chess_sf <- st_intersection(st_cast(st_as_sf(terra::as.polygons(grid_chess)), "POLYGON"), samplers)
+    grid_chess_white_sf <- grid_chess_sf[grid_chess_sf$lyr.1==1,]
+    grid_chess_black_sf <- grid_chess_sf[grid_chess_sf$lyr.1==0,]
+    return(list(white=grid_chess_white_sf, black=grid_chess_black_sf))
+    # ggplot() + gg(data = grid_chess_white_sf, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
+    # ggplot() + gg(data = grid_chess_black_sf, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
+  }else{
+    # Extract the boundary with subpolygons only
+    sf::st_as_sf(
+      gridPolygon <- terra::intersect(gridPolygon, terra::vect(samplers))
+    )
+  }
+}
+
+ 
+# grid_chess_sf_ <- st_intersection(grid_chess_sf, nepal_bnd)
+# 
+# ggplot() + gg(data = grid_chess_sf_)
+
+# values(grid) <- rep(c(rep(c(1, 0), length.out = ncol(grid)),
+#               rep(c(0, 1), length.out = ncol(grid))),
+#               times = nrow(grid)/2)
+# 
+# 
+# 
+# # Convert to polygons
+# gridPolygon <- terra::as.polygons(grid)
+# 
+# # Select only "black" (or "white") cells
+# gridPolygon_samp <- st_as_sf(gridPolygon[gridPolygon$lyr.1 == 1, ])  # Select every other cell
+# gridPolygon <- st_as_sf(gridPolygon)
+# 
+# ggplot() + gg(data = gridPolygon) + gg(data = gridPolygon_samp)
+
+
+# grid_vect <- as.points(grid)
+# values(grid_vect) <- 1:nrow(grid_vect)
+# grid$id <- cells(grid)
+# grid <- terra::aggregate(grid, fact=2)
+
+
+
+# gridPolygon <- terra::as.polygons(grid)
+# 
+# gridPolygon_samp <- spatSample(x = gridPolygon,
+#                                size = floor(nrow(gridPolygon)),
+#                                # strata = grid,
+#                                method = "regular",
+#                                chess="black"
+#                                )
+
+
+# gridPolygon <- terra::intersect(gridPolygon, terra::vect(nepal_bnd))
+# https://damariszurell.github.io/EEC-MGC/b5_pseudoabsence.html
+
+# gridPolygon_samp <- terra::as.polygons(gridPolygon_samp)
+
+# gridPolygon_ <- st_as_sf(gridPolygon)
+# gridPolygon_samp_ <- st_as_sf(gridPolygon_samp)
+# 
+# ggplot() + gg(data = gridPolygon_) + gg(data = gridPolygon_samp_)
+
+
+
+# cv_chess -----------------------------------------------------------
+# use tgt with cv_partition
+
+cv_chess <- function(object,
+                     mesh = NULL,
+                     cv_grid = NULL,
+                     # newdata = NULL,
+                     formula = NULL,
+                     n.samples = 100,
+                     obs = "lambda",
+                     inla.link = NULL,
+                     seed = NULL,
+                     plot = FALSE,
+                     ...) {
+  
+  fml <- object$bru_info$lhoods[[1]]$formula
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  # this one computes the sum across the entire domain
+  # formula_ <- as.formula(paste0(" ~ sum(weight * exp(", ff, "))"))
+  # TODO
+  agg_nc <- bru_mapper_aggregate(rescale = FALSE)
+  formula_ <- as.formula(paste0(" ~ ibm_eval(agg_nc,
+                                    input = list(
+                                      block = .block,
+                                      weights = weight
+                                    ),
+                                    state = ", ff, ", log = FALSE)"))
+  pred <- predict(object, newdata = fm(mesh, cv_grid), 
+                  formula = formula_, n.samples = n.samples)
+  return(pred)
+}
+
+# st_make_grid ------------------------------------------------------------
+
+
+if(FALSE){
+  bnd_grid <- st_intersection(st_make_grid(nepal_bnd, cellsize = 50, square = TRUE), nepal_bnd)
+  bnd_grid_sf <- st_as_sf(bnd_grid)
+  bnd_grid_sf$id = 1:nrow(bnd_grid_sf)
+  ggplot() + 
+    geom_sf(data = bnd_grid_sf) + 
+    geom_sf_text(aes(label = id)) +
+    geom_sf(data = nepal_bnd, col = "red", fill = NA)
+  
+  
+  bnd_grid_odd <- bnd_grid[c(TRUE,FALSE),]
+  bnd_grid_even <- bnd_grid[!c(TRUE,FALSE),]
+  
+  bnd_grid_train <- bnd_grid[sample(1:length(bnd_grid), 0.5*length(bnd_grid)),]
+  
+  ggplot() + geom_sf(data = bnd_grid_odd, fill = "blue") + geom_sf(data = nepal_bnd, col = "red", fill = NA)
+  ggplot() + geom_sf(data = bnd_grid_train, fill = "blue") + geom_sf(data = nepal_bnd, col = "red", fill = NA)
+}
+
+
+
