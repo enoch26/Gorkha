@@ -17,7 +17,7 @@ library(future)
 # contour
 # https://arc2r.github.io/book/Density.html
 
-
+CV_chess <- FALSE; CV_thin <- FALSE
 # https://github.com/riatelab/maptiles
 # get_providers()
 source("read_data.R")
@@ -184,10 +184,10 @@ basin <- rast(here("data", "lsdtt", fdr, "cop30dem_AllBasins.bil")) %>%
 
 ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
   project(crs_nepal$input, threads = TRUE) %>%
-  crop(bnd, mask = TRUE) %>%
+  # crop(bnd_out, mask = TRUE) %>%
   clamp(lower = 1, values = TRUE)
 
-
+# 14982 basin_info
 long <- 85.5
 lat <- 28.2
 
@@ -199,6 +199,10 @@ lat <- 28
 
 long <- 85.2
 lat <- 28.2
+
+# to fix glacier landscapes
+long <- 85
+lat <- 28.5
 
 
 source("mchi_zm.R")

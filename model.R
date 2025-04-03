@@ -22,11 +22,17 @@ knots <- seq(min_rf2ch, max_rf2ch, length = 25)
 mesh_rf2ch <- fm_mesh_1d(knots, interval = c(0, max_rf2ch), degree = 2, boundary = "free")
 rf2ch_mapper <- bru_mapper(mesh_rf2ch, indexed = TRUE)
 
-min_pga_mean <- minmax(pga_mean_raster["pga_mean_exp"])[1]
-max_pga_mean <- minmax(pga_mean_raster["pga_mean_exp"])[2]
-knots <- seq(min_pga_mean, max_pga_mean, length = 25)
-mesh_pga_mean <- fm_mesh_1d(knots, interval = c(min_pga_mean, max_pga_mean), degree = 2, boundary = "free")
+min_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean_exp"])[1]
+max_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean_exp"])[2]
+knots <- seq(min_pga_mean_raster_rw2, max_pga_mean_raster_rw2, length = 25)
+mesh_pga_mean <- fm_mesh_1d(knots, interval = c(min_pga_mean_raster_rw2, max_pga_mean_raster_rw2), degree = 2, boundary = "free")
 pga_mean_mapper <- bru_mapper(mesh_pga_mean, indexed = TRUE)
+
+min_log_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean"])[1]
+max_log_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean"])[2]
+knots <- seq(min_log_pga_mean_raster_rw2, max_log_pga_mean_raster_rw2, length = 25)
+mesh_log_pga_mean <- fm_mesh_1d(knots, interval = c(min_log_pga_mean_raster_rw2, max_log_pga_mean_raster_rw2), degree = 2, boundary = "free")
+log_pga_mean_mapper <- bru_mapper(mesh_log_pga_mean, indexed = TRUE)
 
 min_twi <- minmax(twi["logtwi"])[1]
 max_twi <- minmax(twi["logtwi"])[2]
@@ -34,6 +40,8 @@ knots <- seq(min_twi, max_twi, length = 25)
 mesh_twi <- fm_mesh_1d(knots, interval = c(min_twi, max_twi), degree = 2, boundary = "free")
 twi_mapper <- bru_mapper(mesh_twi, indexed = TRUE)
 
+
+hyper_rw <- list(prec = list(prior='pc.prec', param=c(1, 0.1))) 
 plan(multicore, workers = 10)
 
 
@@ -90,9 +98,14 @@ e_lu <- rep(0, 1)
 
 
 cmp_ <- ~ Intercept(1) +
+  log_pga_mean_raster(pga_mean_raster["pga_mean"], model = "linear") +
   pga_mean_raster(pga_mean_raster["pga_mean_exp"], model = "linear") +
-  # pga_mean_raster_rw2(pga_mean_raster["pga_mean_exp"], model = "rw2", 
-  #                 mapper = pga_mean_mapper, scale.model = TRUE, constr = TRUE) +
+  log_pga_mean_raster_rw2(pga_mean_raster["pga_mean"], model = "rw2",
+                  mapper = log_pga_mean_mapper, scale.model = TRUE, constr = TRUE,
+  hyper = hyper_rw) +
+  pga_mean_raster_rw2(pga_mean_raster["pga_mean_exp"], model = "rw2",
+                      mapper = pga_mean_mapper, scale.model = TRUE, constr = TRUE,
+                      hyper = hyper_rw) +
   # pga_mean_raster(pga_mean_raster["pga_mean"], model = "linear") +
   landuse(
     bru_fill_missing(
@@ -149,30 +162,33 @@ cmp_ <- ~ Intercept(1) +
     ),
     model = "linear", prec.linear = 1e-6
   ) +
-  # log_ksn_tag(ksn_tag$log_cop30dem_channel_tagged_pixels, model = "linear") +
+  log_ksn_tag(log_ksn_tag, model = "linear") +
   ksn_tag(log_ksn_tag, model = "rw2", 
-          mapper = ksn_tag_mapper, scale.model = TRUE, constr = TRUE) +
+          mapper = ksn_tag_mapper, scale.model = TRUE, constr = TRUE,
+          hyper = hyper_rw) +
   rf2ch(rf2ch["rf2ch_km"], model = "linear") +
   rf2ch_inv(1 / exp(rf2ch["rf2ch_km"]), model = "linear") +
   rf2ch_rw2(rf2ch["rf2ch_km"], model = "rw2",
-            mapper = rf2ch_mapper, scale.model = TRUE, constr = TRUE) +
-rf2ch_inv_rw2(1 / exp(rf2ch["rf2ch_km"]), model = "rw2",
-              mapper = rf2ch_mapper, scale.model = TRUE, constr = TRUE) +
-fd2ch(fd2ch["fd2ch_km"], model = "linear") +
-fd2ch_inv(1 / exp(fd2ch["fd2ch_km"]), model = "linear") +
-rf2fr(rf2fr["rf2fr_km"], model = "linear") +
-rf2fr_inv(1 / exp(rf2fr["rf2fr_km"]), model = "linear") +
-fd2fr(fd2fr["fd2fr_km"], model = "linear") +
-fd2fr_inv(1 / exp(fd2fr["fd2fr_km"]), model = "linear") +
-twi(twi["logtwi"], model = "linear")
+            mapper = rf2ch_mapper, scale.model = TRUE, constr = TRUE,
+            hyper = hyper_rw) +
+  rf2ch_inv_rw2(1 / exp(rf2ch["rf2ch_km"]), model = "rw2",
+                mapper = rf2ch_mapper, scale.model = TRUE, constr = TRUE,
+                hyper = hyper_rw) +
+  fd2ch(fd2ch["fd2ch_km"], model = "linear") +
+  fd2ch_inv(1 / exp(fd2ch["fd2ch_km"]), model = "linear") +
+  rf2fr(rf2fr["rf2fr_km"], model = "linear") +
+  rf2fr_inv(1 / exp(rf2fr["rf2fr_km"]), model = "linear") +
+  fd2fr(fd2fr["fd2fr_km"], model = "linear") +
+  fd2fr_inv(1 / exp(fd2fr["fd2fr_km"]), model = "linear") +
+  twi(twi["logtwi"], model = "linear")
 # twi(twi["logtwi"], model = "rw2", 
 #     mapper = twi_mapper, scale.model = TRUE, constr = TRUE) 
-  # mchi_(pred_mchi_terra_$rf2ch_mchi_1000_, model = "linear") +
-  # mchi_near(mchi_terra_near$fd2ch_log_mchi, model = "linear") +
-  # mchi_near_(eval_spatial(mchi_terra_near$fd2ch_log_mchi, geometry), model = "const") +
-  # mchi_near_1000(mchi_terra_near$fd2ch_mchi_1000, model = "linear") +
-  # relief(dem_terrain_focal["relief"], model = "linear") +
-  # relief2(dem_terrain_focal2["relief"], model = "linear") +
+# mchi_(pred_mchi_terra_$rf2ch_mchi_1000_, model = "linear") +
+# mchi_near(mchi_terra_near$fd2ch_log_mchi, model = "linear") +
+# mchi_near_(eval_spatial(mchi_terra_near$fd2ch_log_mchi, geometry), model = "const") +
+# mchi_near_1000(mchi_terra_near$fd2ch_mchi_1000, model = "linear") +
+# relief(dem_terrain_focal["relief"], model = "linear") +
+# relief2(dem_terrain_focal2["relief"], model = "linear") +
 # beta_mchi(
 #   1,
 #   mean.linear = 0,
@@ -191,48 +207,31 @@ twi(twi["logtwi"], model = "linear")
 # crv_profile(crv_profile["crv_profile"], model = "linear")
 
 # formula -----------------------------------------------------------------
-fml1a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch
-fml1b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch
-# Mean AE score:  0.4200901 
-# Mean SE score:  0.6815928 
-# Mean DS score:  -1.441686 
-# Mean log score:  0.442881
-fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag 
-fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag
-# Mean AE score:  0.4211382 
-# Mean SE score:  0.6534696 
-# Mean DS score:  -1.407612 
-# Mean log score:  0.4444559 
+fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landuse + nepal_geo + ksn_tag 
+fml1b <- logarea_m2 ~ Intercept + pga_mean_raster_rw2 + landuse_ + nepal_geo_ + ksn_tag 
+
+fml2a <- geometry ~ Intercept + log_pga_mean_raster + landuse + nepal_geo + ksn_tag 
+fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag 
 
 # not better than fml1
 # fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch + rf2fr
 # fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch + rf2fr
-
 # fml2a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch + fd2fr
 # fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch + fd2fr
 
-fml3a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch_inv 
-fml3b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch_inv
-# Mean AE score:  0.420108 
-# Mean SE score:  0.6803675 
-# Mean DS score:  -1.439841 
-# Mean log score:  0.4429099 
+fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + landuse + nepal_geo + ksn_tag + rf2ch_inv 
+fml3b <- logarea_m2 ~ Intercept + pga_mean_raster_rw2 + landuse_ + nepal_geo_ + ksn_tag + rf2ch_inv
 
+fml4a <- geometry ~ Intercept + log_pga_mean_raster + landuse + nepal_geo + ksn_tag + rf2ch_inv
+fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + rf2ch_inv
 
-fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch
-fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch
-# Mean AE score:  0.4192418 
-# Mean SE score:  0.7150837 
-# Mean DS score:  -1.478351 
-# Mean log score:  0.4414419 
+# not as good as rf2ch
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch
 
-fml5a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + fd2ch_inv
-fml5b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + fd2ch_inv
-# Mean AE score:  0.4195739 
-#  Mean SE score:  0.7235325 
-#  Mean DS score:  -1.471966 
-#  Mean log score:  0.4416931 
-
+fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + landuse + nepal_geo + log_ksn_tag
+fml5b <- logarea_m2 ~ Intercept + pga_mean_raster_rw2 + landuse_ + nepal_geo_ + log_ksn_tag 
+ 
 # only add extra noises for sheer ksn model, make it worse
 # fml4a <- geometry ~ Intercept + pga_mean_raster + landuse + nepal_geo + ksn_tag + twi
 # fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landuse_ + nepal_geo_ + ksn_tag + twi

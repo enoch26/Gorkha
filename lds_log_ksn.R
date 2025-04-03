@@ -1,0 +1,117 @@
+#  This code is to remove landslides in glacier landscape because lsdtopotools needs extra handling for these landslides
+# source mchi_zm.R
+# 2228
+
+basin_zm <- basin %>% filter(cop30dem_AllBasins == 2228)
+basin_zm_sf <- as_sf(as.polygons(basin_zm))
+
+basin_ <-  basin %>% crop(bnd_out, mask = TRUE) 
+
+ksn_tag <- rast(here("data", "ksn_tag_near.tif")) %>%
+  project(crs_nepal$input, threads = TRUE) %>%
+  crop(bnd_out, mask = TRUE) %>%
+  clamp(1, values = TRUE)
+log_ksn_tag <- log(ksn_tag$cop30dem_channel_tagged_pixels)
+
+log_ksn_tag_zm <- log_ksn_tag %>% crop(basin_zm_sf)
+
+ksn_tag_ori <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels_near.tif")) %>%
+  # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
+  project(crs_nepal$input, threads = TRUE) %>%
+  crop(bnd_out, mask = TRUE) %>%
+  clamp(1, values = TRUE)
+log_ksn_tag_ori <- log(ksn_tag_ori$cop30dem_channel_tagged_pixels)
+log_ksn_tag_ori_zm <- log_ksn_tag_ori %>% crop(basin_zm_sf)
+
+landslides_c$log_ksn_ori <- extract(log_ksn_tag_ori, vect(st_geometry(landslides_c)), ID = FALSE)
+# landslides_c_glacier <- (landslides_c[landslides_c$log_ksn < 3.125,])
+# > nrow(landslides_c_glacier)
+# [1] 108
+
+# landslides_c_glacier <- (landslides_c[landslides_c$log_ksn < 2.5,])
+# > nrow(landslides_c_glacier)
+# [1] 95
+
+landslides_c_glacier <- (landslides_c[landslides_c$log_ksn_ori < 1.5,])
+nrow(landslides_c_glacier)
+
+bnd_zm <- st_intersection(bnd, basin_zm_sf)
+
+tile <- maptiles::get_tiles(st_as_sfc(bnd), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
+
+ggplot() + geom_spatraster_rgb(data = tile) + gg(data = bnd_out, col = "red", fill= "transparent")
+ggsave("figures/tile.pdf", width = tw, height = tw/2)
+
+ggplot() + gg(data = log_ksn_tag_ori) + gg(data = landslides_c_glacier, col = "red", size = 0.01) + scale_fill_viridis_c(na.value = "transparent") 
+ggsave("figures/landslides_c_glacier.pdf", width = tw, height = tw/2)
+ggplot() + geom_spatraster_rgb(data = tile) + gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+  gg(data = bnd_out, col = "red", fill = "transparent") +
+  scale_fill_viridis_c(na.value = "transparent") 
+ggsave("figures/landslides_c_glacier_tile.pdf", width = tw, height = tw/2)
+
+
+
+
+# zoom in -----------------------------------------------------------------
+
+
+# TODO https://sesync-ci.github.io/blog/mapping-with-Mapbox.html
+tile_ <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
+# tile_topo <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.WorldTopoMap", crop = TRUE, zoom = 13) 
+# tile_landscape <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Thunderforest.Landscape", crop = TRUE, zoom = 13) 
+# tile_netgeo <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.NatGeoWorldMap", crop = TRUE, zoom = 13) 
+
+p3 <- ggplot() + geom_spatraster_rgb(data = tile_) + 
+  gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+  gg(data = bnd_zm, col = "red", fill = "transparent") +
+  scale_fill_viridis_c(na.value = "transparent") +
+  ggspatial::annotation_scale(location = "br") +
+  ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+
+p3
+ggsave("figures/landslides_c_glacier_tile_zm.pdf", width = tw/3, height = tw/2)
+
+p1 <- ggplot() + gg(data = log_ksn_tag_ori_zm) +
+  gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+  gg(data = bnd_zm, col = "red", fill = "transparent") +
+  scale_fill_viridis_c(na.value = "transparent", name = expression(log_k[sn])) +
+  # guides(fill = guide_legend("log k_sn")) +
+  ggspatial::annotation_scale(location = "br") +
+  ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+
+p1
+ggsave("figures/landslides_c_glacier_zm.pdf", width = tw/3, height = tw/2)
+
+p2 <- ggplot() + gg(data = log_ksn_tag_zm) +
+  gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+  gg(data = bnd_zm, col = "red", fill = "transparent") +
+  scale_fill_viridis_c(na.value = "transparent", name = expression(log_k[sn])) +
+  ggspatial::annotation_scale(location = "br") +
+  ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+
+p2
+ggsave("figures/landslides_c_glacier_zm_fix.pdf", width = tw/3, height = tw/2)
+
+
+p3 + p1 + p2 + plot_layout(widths = c(1, 1, 1),guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom')
+ggsave("figures/landslides_c_glacier_zm_all.pdf", width = tw, height = tw/2)
+
+# ggspatial::annotation_scale(location = "br") +
+#   ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+
+
+# ggplot() + geom_spatraster_rgb(data = tile_topo) + 
+#   gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+#   scale_fill_viridis_c(na.value = "transparent") 
+# ggsave("figures/landslides_c_glacier_topo_zm.pdf", width = tw, height = tw/2)
+# ggplot() + geom_spatraster_rgb(data = tile_terrain) + 
+#   gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+#   # gg(data = bnd_out, col = "red", fill = "transparent") +
+#   scale_fill_viridis_c(na.value = "transparent") 
+# ggsave("figures/landslides_c_glacier_terrain_zm.pdf", width = tw, height = tw/2)
+# ggplot() + geom_spatraster_rgb(data = tile_netgeo) + 
+#   gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
+#   # gg(data = bnd_out, col = "red", fill = "transparent") +
+#   scale_fill_viridis_c(na.value = "transparent") 
+# ggsave("figures/landslides_c_glacier_netgeo_zm.pdf", width = tw, height = tw/2)
+

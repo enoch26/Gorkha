@@ -194,6 +194,8 @@ sf2sr <- function(x, y, field = "mean", fun = "mean"){
 # now only work for Gaussian (and Poisson, because Poisson we can turn in Gaussian)
 score <- function(object,
                       newdata = NULL,
+                      # mesh,
+                      cv_grid,
                       formula = NULL,
                       n.samples = 100,
                       obs = "count",
@@ -207,6 +209,8 @@ score <- function(object,
   # }, add = TRUE) # restore the seed
   # if the second one is not provided, generate the second seed for reproducibility.
   # check the vector of seed len 2
+  
+
 
   if (length(seed) > 2) {
     stop("At most two seeds should be provided")
@@ -263,14 +267,33 @@ score <- function(object,
   ff <- deparse(fml[[3]], width.cutoff = 150L)
   # formula <- as.formula(paste0(" ~  exp(", ff, ")"))
   
+  # formula <- as.formula(paste(
+  #   paste0(" ~ {expect <- exp(", ff, ")"),
+  #   "\n",
+  #   paste0(
+  #     "list(expect = expect, obs_prob = dpois(", obs,", lambda = expect))}"
+  #   )
+  # ))
+  
+  agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
   formula <- as.formula(paste(
-    paste0(" ~ {expect <- exp(", ff, ")"),
+    paste0(" ~ { expect <- ibm_eval(agg_nc, input = list(
+                                        block = .block,
+                                        weights = weight
+                                      ),
+                                      state = ", ff, ", log = FALSE)"),
     "\n",
     paste0(
-      "list(expect = expect, obs_prob = dpois(", obs,", lambda = expect))}"
+      "list(expect = expect)}"
+      # "list(expect = expect, obs_prob = dpois(", obs,", lambda = expect))}"
     )
-  ))
+  )
+  )
   
+  # pred <- predict(fit1a,
+  #   newdata = cv_newdata, formula = formula_,
+  #   n.samples = 5
+  # )
   pred <- predict(object,
     newdata = newdata, formula = formula,
     n.samples = n.samples,
@@ -279,13 +302,15 @@ score <- function(object,
   )
   
   post_E <- get("mean", pred$expect)
+  post_median <- get("median", pred$expect)
   post_Var <- post_E + (get("sd", pred$expect))^2
   
-  pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_E)
-  pred$obs_prob$SE <- SE <- (get(obs, newdata) - post_E)^2
+  pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_median)
+  pred$obs_prob$SE <- SE <- (get(obs, cv_grid) - post_E)^2
   pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
   # log score
-  pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
+  pred$obs_prob$LS <- LS <- -log(dpois(get(obs, cv_grid), lambda = post_E))
+  # pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
   
   AE_mean <- mean(AE, na.rm = TRUE)
   SE_mean <- mean(SE, na.rm = TRUE)
@@ -674,7 +699,7 @@ cv_partition <- function(samplers, resolution = NULL, nrows = NULL, ncols = NULL
     return(list(white=grid_chess_white_sf, black=grid_chess_black_sf))
     # ggplot() + gg(data = grid_chess_white_sf, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
     # ggplot() + gg(data = grid_chess_black_sf, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
-  }else{
+  } else {
     # Extract the boundary with subpolygons only
     sf::st_as_sf(
       gridPolygon <- terra::intersect(gridPolygon, terra::vect(samplers))
@@ -752,14 +777,20 @@ cv_chess <- function(object,
   # this one computes the sum across the entire domain
   # formula_ <- as.formula(paste0(" ~ sum(weight * exp(", ff, "))"))
   # TODO
-  agg_nc <- bru_mapper_aggregate(rescale = FALSE)
+
+  agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
   formula_ <- as.formula(paste0(" ~ ibm_eval(agg_nc,
                                     input = list(
                                       block = .block,
                                       weights = weight
                                     ),
                                     state = ", ff, ", log = FALSE)"))
-  pred <- predict(object, newdata = fm(mesh, cv_grid), 
+  cv_newdata <- fm_int(mesh, cv_grid$black)
+  
+  reorder <- order(cv_newdata$.block)
+  cv_newdata <- cv_newdata[reorder, , drop  = FALSE]
+  
+  pred <- predict(object, newdata = cv_newdata,
                   formula = formula_, n.samples = n.samples)
   return(pred)
 }
@@ -788,3 +819,61 @@ if(FALSE){
 
 
 
+
+# for pred.R --------------------------------------------------------------
+
+
+# helper function to make formula for prediction
+fml_lambda <- function(fml) {
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  tt <- labels(terms(fml))
+  if (any(stringr::str_detect(tt, "exp"))) {
+    tt1 <- tt
+    tt1[stringr::str_detect(tt1, "exp")] <- "exp_diff"
+  } else {
+    tt1 <- tt
+  }
+  # if (any(stringr::str_detect(tt, "beta"))) {
+  #   tt1 <- tt
+  #   tt1[stringr::str_detect(tt1, "beta")] <- ""
+  # } else {
+  #   tt1 <- tt
+  # }
+  as.formula(paste0(
+    " ~ list(", "lambda = exp(", ff, "),",
+    "log_lambda = ", ff,
+    paste(",", tt1, "=", tt, collapse = ""), ")"
+  ))
+}
+
+fml_mu <- function(fml) {
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  tt <- labels(terms(fml))
+  if (any(stringr::str_detect(tt, "exp"))) {
+    tt1 <- tt
+    tt1[stringr::str_detect(tt1, "exp")] <- "exp_diff"
+  } else {
+    tt1 <- tt
+  }
+  as.formula(paste0(" ~ list(", "mu = ", ff, paste(",", tt1, "=", tt, collapse = ""), ")"))
+}
+
+# textbox
+p_textbox <- function(text) {
+  df <- data.frame(
+    x = 0.1,
+    y = 0.8,
+    label = paste0("Intercept = ", as.character(text))
+  )
+  
+  p <- ggplot() +
+    ggtext::geom_textbox(
+      data = df,
+      aes(x, y, label = label),
+      # width = grid::unit(0.73, "npc"), # 73% of plot panel width
+      hjust = 0, vjust = 1
+    ) +
+    xlim(0, 1) +
+    ylim(0, 1)
+  p
+}

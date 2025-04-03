@@ -80,26 +80,42 @@
 
 to_plot <- TRUE
 ncore <- 10
-x_bin <- 800 # TODO increase to 1000
+x_bin <- 500 # TODO increase to 1000
 edge_len_n <- 2
 seed <- c(1234, 1234)
 set.seed(1234)
 tw <- 15.55528
 fdr <- "lanczos_"
 JU <- UP <- FALSE
-x_pxl <- 800
+x_pxl <- 500
+glacier_remove <- FALSE
+
 # CV ---------------------------------------------------------------------
 # only either one can be true
-CV_thin <- TRUE
-CV_chess <- FALSE
+# CV_thin <- FALSE; CV_chess <- TRUE
+# CV_thin <- TRUE; CV_chess <- FALSE
+# source("read_data.R");source("model.R");source("pred.R")
+# Sys.sleep(21600);
+# source("read_data.R");source("model.R");source("score.R")
 
 if(CV_chess){
-  nm_chess  <- "_chess"
+  # cv_chess_resol <- c(5,5)
+  # > nrow(landslides_c)
+  # [1] 10390
+  # > nrow(landslides_c_test)
+  # [1] 10081
   cv_chess_resol <- c(20,20)
+  
+  nm_chess  <- paste0("_chess", cv_chess_resol[1])
 } else {
   nm_chess  <- ""
 }
-  
+
+if(CV_thin){
+  cv_thin_resol <- c(10,10)
+  # cv_thin_resol <- c(20,20)
+  # cv_thin_resol <- c(30,30)
+}
 
 # Library -----------------------------------------------------------------
 
@@ -266,14 +282,6 @@ pga_mean_raster$pga_mean_exp <- exp(pga_mean_raster$pga_mean)
 # https://stackoverflow.com/questions/76209910/replace-nas-by-numeric-values-in-rasterstack-raster-or-multi-layer-spatraster
 
 
-
-ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
-  project(crs_nepal$input, threads = TRUE) %>%
-  crop(bnd_out, mask = TRUE) %>%
-  clamp(1, values = TRUE)
-log_ksn_tag <- log(ksn_tag$cop30dem_channel_tagged_pixels)
-# rm(ksn_tag)
-
 # CHANNEL
 rf2ch <- rast(here("data", "lsdtt", fdr, "cop30dem_RELIEFTOCHAN.bil")) %>%
   project(crs_nepal$input) %>%
@@ -308,25 +316,26 @@ fd2fr$fd2fr_km <- values(fd2fr) / 1000
   twi$logtwi <- log(twi$twi)
 # }
 
-if (file.exists(here("data", "cop30dem.tif"))) {
-  dem <- rast(here("data", "cop30dem.tif")) %>%
-    project(crs_nepal$input) %>%
-    crop(bnd_out, mask = TRUE)
-} else {
-  dem <- rast(here("data", "output_hh.tif")) %>%
-    project(crs_nepal$input) %>%
-    # crop(st_as_sfc(landslides_bbox), mask = TRUE)
-    crop(bnd_out, mask = TRUE)
-  # dem <- project(dem, crs_nepal$input)
-  # dem <- dem %>% crop(bnd_out, mask = TRUE)
-  dem$dem_km <- dem$output_hh / 1000
 
-  writeRaster(dem, here("data", "cop30dem.tif"), overwrite = TRUE)
-}
 
 
 ## flow direction ----------------------------------------------------------
 if (FALSE) {
+  if (file.exists(here("data", "cop30dem.tif"))) {
+    dem <- rast(here("data", "cop30dem.tif")) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+  } else {
+    dem <- rast(here("data", "output_hh.tif")) %>%
+      project(crs_nepal$input) %>%
+      # crop(st_as_sfc(landslides_bbox), mask = TRUE)
+      crop(bnd_out, mask = TRUE)
+    # dem <- project(dem, crs_nepal$input)
+    # dem <- dem %>% crop(bnd_out, mask = TRUE)
+    dem$dem_km <- dem$output_hh / 1000
+    
+    writeRaster(dem, here("data", "cop30dem.tif"), overwrite = TRUE)
+  }
   dem <- rast(here("data", "lsdtt", "lanczos_", "cop30dem.bil")) %>%
     project(crs_nepal$input) %>%
     crop(bnd_out, mask = TRUE)
@@ -598,59 +607,7 @@ system.time({
 # mesh_fm <- fm_subdivide(mesh_fm, 1)
 
 # fm_pixels for prediction ----------------------------------------------------------
-# trying to make square pixels
-xdiff <- st_bbox(bnd)[3] - st_bbox(bnd)[1]
-ydiff <- st_bbox(bnd)[4] - st_bbox(bnd)[2]
-
-# pxl %<-% {
-#   fm_pixels(mesh_fm, dims = c(x_pxl, ceiling(x_pxl * ydiff / xdiff)), mask = bnd)
-# }
-
-pxl_terra <- fm_pixels(mesh_fm,
-                       dims = c(x_pxl, ceiling(x_pxl * ydiff / xdiff)), mask = bnd,
-                       format = "terra")
-
-pxl_terra$count <- mask(rasterize(vect(landslides_c), pxl_terra, fun = "length", background = 0), pxl_terra$.mask)
-
-# st_make_grid does not work
-if(FALSE){
-  pxl_grid <- st_make_grid(pxl, 
-                           n = c(x_pxl, ceiling(x_pxl * xdiff / ydiff)), 
-                           square = TRUE) %>% 
-    st_intersection(bnd) 
-  #   ggplot() + geom_sf(data = pxl_grid) 
-  # ggsave("pxl_grid.pdf")
-}
-
-# counting number of landslides in each spatraster cell
-if (CV_thin | CV_chess) {
-
-  pxl_terra$count_test <- mask(rasterize(vect(landslides_c_test), pxl_terra, fun = "length", background = 0), pxl_terra$.mask)
-  # sum(values(pxl_terra$count), na.rm =TRUE)
-  # > nrow(landslides_c)
-  # [1] 10278 MATCH
-}
-
-# for predict.bru()
-pxl <- st_as_sf(as.points(pxl_terra))
-
-if (FALSE) {
-    pxl_sf <- sf::st_as_sf(
-      terra::intersect(
-      as.polygons(pxl_terra, aggregate = FALSE, na.rm = FALSE), # na.rm = TRUE will remove landslides points
-      terra::vect(bnd)
-    ))
-  box <- c(
-    xmin = 353, xmax = 358,
-    ymin = 3028, ymax = 3033
-  )
-  box <- st_bbox(box, crs = crs_nepal)
-  pxl_sf_zm <- st_crop(pxl_sf, box)
-  pxl_zm <- st_crop(pxl, box)
-  ggplot() + geom_sf(data = pxl_sf["count"]) + geom_sf(data = pxl_zm)
-  ggsave("figures/pxl_zm.png", width = tw, height = tw / 2)
-}
-
+source("pxl.R")
 
 ## asp mesh ----------------------------------------------------------------
 

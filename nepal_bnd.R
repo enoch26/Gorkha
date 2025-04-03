@@ -44,18 +44,20 @@ nepal_bnd %<-% {
 
 # remove the unrelated geological region
 # if(FALSE){
-  nepal_geo %<-% {
-    st_read(here("data", "nepal_geo_fill_.shp")) %>%
-      st_transform(crs = crs_nepal) 
-      # st_intersection(bnd_out)
-  }
-  
-  nepal_geo_ <- nepal_geo[(nepal_geo$ROCK_TYPES %in% c("Siwalik Group", "Gangetic Plain", "Sub Himalaya")), ]
-  nepal_bnd <- st_cast(st_difference(nepal_bnd, st_union(nepal_geo_$geometry)), 
-                       "POLYGON")
-  
-  # plot(nepal_bnd)
-  # plot(st_geometry(st_union(nepal_geo_)), add = TRUE)
+nepal_geo %<-% {
+  st_read(here("data", "nepal_geo_fill_.shp")) %>%
+    st_transform(crs = crs_nepal)
+  # st_intersection(bnd_out)
+}
+
+nepal_geo_ <- nepal_geo[(nepal_geo$ROCK_TYPES %in% c("Siwalik Group", "Gangetic Plain", "Sub Himalaya")), ]
+nepal_bnd <- st_cast(
+  st_difference(nepal_bnd, st_union(nepal_geo_$geometry)),
+  "POLYGON"
+)
+
+# plot(nepal_bnd)
+# plot(st_geometry(st_union(nepal_geo_)), add = TRUE)
 # }
 
 
@@ -107,14 +109,30 @@ landslides %<-% {
 }
 
 landslides_c <- st_centroid(landslides) %>% st_intersection(bnd)
-# TODO find crown pt with flow direction
 
+# ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels_near.tif")) %>%
+ksn_tag <- rast(here("data", "ksn_tag_near.tif")) %>%
+  # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
+  project(crs_nepal$input, threads = TRUE) %>%
+  crop(bnd_out, mask = TRUE) %>%
+  clamp(1, values = TRUE)
+log_ksn_tag <- log(ksn_tag$cop30dem_channel_tagged_pixels)
+# rm(ksn_tag)
+
+landslides_c$log_ksn <- extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE)
+# TODO find crown pt with flow direction
+if (glacier_remove) {
+  landslides_c <- (landslides_c[landslides_c$log_ksn >= 1.99, ])
+  landslides_c_glacier <- (landslides_c[landslides_c$log_ksn < 1.99, ])
+  # nrow(landslides_c_glacier)
+  # 85
+}
 
 
 # train and test data split -----------------------------------------------
 
 # TODO CV_thin: half the landslides pts, model the same, predict the same, compute the score with newdata$count
-# TODO CV_chess: cv_partition the domain, model with test landslides pts data over the entire domain, predict the 
+# TODO CV_chess: cv_partition the domain, model with test landslides pts data over the entire domain, predict the
 
 # TODO split data for model and test data, turn it back to df and then to sf to avoid the error
 # Error : [] nrow dataframe does not match nrow geometry
@@ -123,39 +141,59 @@ landslides_c <- st_centroid(landslides) %>% st_intersection(bnd)
 #   package ‘inlabru’ already present in search()
 # 2: [SpatVector from sf] not all geometries were transferred, use svc for a geometry collection
 # Error: [as,sf] coercion failed. You can try coercing via a Spatial* (sp) class
-if(CV_thin){
-  if(file.exists(here("data", "landslides_thin_train.shp"))){
+if (CV_thin) {
+  if (file.exists(here("data", "landslides_thin_train.shp"))) {
     landslides_c <- st_read(here("data", "landslides_thin_train.shp"))
     landslides_c_test <- st_read(here("data", "landslides_thin_test.shp"))
   } else {
-    test_idx <- sample(1:nrow(landslides_c), 0.5*nrow(landslides_c))
+    test_idx <- sample(1:nrow(landslides_c), 0.5 * nrow(landslides_c))
     landslides_c_test <- landslides_c[test_idx, ]
     landslides_c <- landslides_c[-test_idx, ]
     rownames(landslides_c) <- rownames(landslides_c_test) <- NULL
-    st_write(landslides_c, here("data", "landslides_thin_train.shp"))
-    st_write(landslides_c_test, here("data", "landslides_thin_test.shp"))
+  st_write(landslides_c, here("data", "landslides_thin_train.shp"))
+  st_write(landslides_c_test, here("data", "landslides_thin_test.shp"))
   }
-} else if (CV_chess){
-  if(file.exists(here("data", "landslides_chess_train.shp"))){
-    landslides_c <- st_read(here("data", "landslides_chess_train.shp"))
-    landslides_c_test <- st_read(here("data", "landslides_chess_test.shp"))
+    
+
+} else if (CV_chess) {
+  # https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html
+  # get.chessboard
+  # https://rdrr.io/cran/terra/src/R/sample.R
+  cv_grid <- cv_partition(bnd,
+    resolution = cv_chess_resol
+  )
+if(to_plot){
+    ggplot() + gg(data = cv_grid$white, fill = "white") + gg(data = cv_grid$black, fill = "black") +
+    geom_sf(data = bnd, col = "red", fill = "NA")
+    ggsave(here("figures", "cv_chess_grid.pdf"))
+  
+}
+  # ggplot() +  + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
+
+  if (file.exists(here("data", paste0("landslides_chess", nm_chess ,"_train.shp")))) {
+    landslides_c <- st_read(here("data",paste0("landslides_chess", nm_chess ,"_train.shp")))
+    landslides_c_test <- st_read(here("data", paste0("landslides_chess", nm_chess, "_test.shp")))
+    
+    cv_grid$white$count <- lengths(st_intersects(cv_grid$white, landslides_c))
+    cv_grid$black$count_test <- lengths(st_intersects(cv_grid$black, landslides_c_test))
   } else {
-    # https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html
-    # get.chessboard
-    # https://rdrr.io/cran/terra/src/R/sample.R
-    cv_grid <- cv_partition(nepal_bnd,
-                            resolution = cv_chess_resol
-    )
-    
-    # ggplot() + gg(data = cv_grid$white, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
-    # ggplot() + gg(data = cv_grid$black, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
-    
+    landslides_c_test <- st_intersection(landslides_c, cv_grid$black)
+    # pxl_black <- st_intersection(pxl, cv_grid$black)
+
+    # ggplot() + geom_sf(data = pxl_black, size = .01)
+    # ggsave("figures/pxl_black.pdf")
     landslides_c <- st_intersection(landslides_c, cv_grid$white)
-    landslides_c_test <- st_intersection(landslides_c_test, cv_grid$black)
-    st_write(landslides_c, here("data", "landslides_chess_train.shp"))
-    st_write(landslides_c_test, here("data", "landslides_chess_test.shp"))
+  
+    cv_grid$white$count <- lengths(st_intersects(cv_grid$white, landslides_c))
+    cv_grid$black$count_test <- lengths(st_intersects(cv_grid$black, landslides_c_test))
+    
+  st_write(landslides_c, here("data", paste0("landslides_chess", nm_chess ,"_train.shp")))
+  st_write(landslides_c_test, here("data", paste0("landslides_chess", nm_chess, "_test.shp")))
   }
-} else {}
+} else {print("no thin no chess CV")}
 
 landslides_c$logarea_m2 <- log(landslides_c$Area_m2)
-landslides_c_test$logarea_m2 <- log(landslides_c_test$Area_m2)
+
+if (CV_thin|CV_chess){
+  landslides_c_test$logarea_m2 <- log(landslides_c_test$Area_m2)
+}
