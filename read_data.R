@@ -25,9 +25,14 @@
 # boundary box
 # https://www.sciencebase.gov/catalog/item/imap/61f040e1d34e8b818adc3251
 
-# landuse
+# landcover
+# error in downloading
+# [DirectoryNotFoundException: Could not find a part of the path 'E:\RDS_Main\BulkDownloads\Nepal_NLCMS\nlcms_2015.zip'.]
 # https://rds.icimod.org/Home/DataDetail?metadataId=1972729
+# https://observablehq.com/@categorise/icimod-land-cover-of-nepal
+
 # Land Cover of Himalaya Region
+# FAO (2021) The Himalaya Regional Land Cover Database: Lancover in Nepal, Bhutan, Afghanistan, Pakistan, India, China and Myanmar. FAO.
 # hima_lc_npl
 # https://data.apps.fao.org/map/catalog/srv/eng/catalog.search#/metadata/46d3c2ef-72c3-4f96-8e32-40723cd1847b
 # https://storage.googleapis.com/fao-maps-catalog-data/geonetwork/landcover/hima_lc_npl.zip
@@ -91,28 +96,23 @@ x_pxl <- 500
 glacier_remove <- FALSE
 
 # CV ---------------------------------------------------------------------
-# only either one can be true
-# CV_thin <- FALSE; CV_chess <- TRUE
-# CV_thin <- TRUE; CV_chess <- FALSE
-# source("read_data.R");source("model.R");source("pred.R")
-# Sys.sleep(21600);
-# source("read_data.R");source("model.R");source("score.R")
 
-if(CV_chess){
+
+if (CV_chess) {
   # cv_chess_resol <- c(5,5)
   # > nrow(landslides_c)
   # [1] 10390
   # > nrow(landslides_c_test)
   # [1] 10081
-  cv_chess_resol <- c(20,20)
-  
-  nm_chess  <- paste0("_chess", cv_chess_resol[1])
+  cv_chess_resol <- c(10, 10)
+
+  nm_chess <- paste0("_chess", cv_chess_resol[1])
 } else {
-  nm_chess  <- ""
+  nm_chess <- ""
 }
 
-if(CV_thin){
-  cv_thin_resol <- c(10,10)
+if (FALSE) {
+  # cv_thin_resol <- c(5, 5)
   # cv_thin_resol <- c(20,20)
   # cv_thin_resol <- c(30,30)
 }
@@ -148,7 +148,7 @@ source(here("function.R"))
 
 source(here("nepal_bnd.R"))
 
-landuse %<-% {
+landcover %<-% {
   st_read(
     here(
       "data",
@@ -160,36 +160,36 @@ landuse %<-% {
     st_intersection(bnd_out)
 }
 
-# Landuse without landslides
-landuse$landslides_count <- lengths(st_intersects(landuse, landslides_c))
+# landcover without landslides
+landcover$landslides_count <- lengths(st_intersects(landcover %>% select(CODE1), landslides_c))
 
-landuse_df <- as.data.frame(landuse) %>%
+landcover_df <- as.data.frame(landcover) %>%
   group_by(CODE1) %>%
   summarise(
     total_count = sum(landslides_count),
     .groups = "drop"
   )
 # CODE1 with landslides
-landuse_ref <- landuse_df %>%
+landcover_ref <- landcover_df %>%
   filter(total_count != 0) %>%
   pull(CODE1)
 
-landuse$CODE1_ref <- ifelse(landuse$CODE1 %in% landuse_ref,
+landcover$CODE1_ref <- ifelse(landcover$CODE1 %in% landcover_ref,
   0, 1
 )
 
-landuse$CODE1 <- as.factor(landuse$CODE1)
+landcover$CODE1 <- as.factor(landcover$CODE1)
 
 # 8WP is problematic, so we replace it with NA, and NA will be replace with bru_fill_missing with nearest
-landuse <- landuse_ <- landuse %>%
+landcover <- landcover_ <- landcover %>%
   mutate(CODE1 = stringr::str_replace(CODE1, "8WP", NA_character_))
 
-# after bru fill missing. see landuse_fill.R
-# landuse %<-% {
+# after bru fill missing. see landcover_fill.R
+# landcover %<-% {
 #   st_read(
 #     here(
 #       "data",
-#       "landuse_.shp"
+#       "landcover_.shp"
 #     )
 #   ) %>%
 #     st_transform(crs = crs_nepal) %>% # to UTM
@@ -248,7 +248,7 @@ if (FALSE) {
 #   geom_sf(data = bnd_out, fill = NA, col = "red")
 # ggsave("figures/water.png", width = tw, height = tw/2)
 
-# landuse$CODE1 <- relevel(as.factor(landuse$CODE1),
+# landcover$CODE1 <- relevel(as.factor(landcover$CODE1),
 #                          ref = "1HSs") # TODO oringially 2TCOne//2TCObe
 
 # data format and source
@@ -304,38 +304,39 @@ fd2fr <- rast(here("data", "lsdtt", fdr, "cop30dem_FDTOFARRIDGE.bil")) %>%
   crop(bnd_out, mask = TRUE)
 fd2fr$fd2fr_km <- values(fd2fr) / 1000
 
-# if (FALSE) {
+if (FALSE) {
   twi <- rast(here("data", "lsdtt", fdr, "cop30dem_TWI.bil")) %>%
     project(crs_nepal$input) %>%
-    crop(bnd_out, mask = TRUE) %>% 
+    crop(bnd_out, mask = TRUE) %>%
     clamp(1, values = TRUE)
-  
-  
+
+
   names(twi) <- "twi"
-  
+
   twi$logtwi <- log(twi$twi)
-# }
+}
 
 
 
 
 ## flow direction ----------------------------------------------------------
+if (file.exists(here("data", "cop30dem.tif"))) {
+  dem <- rast(here("data", "cop30dem.tif")) %>%
+    project(crs_nepal$input) %>%
+    crop(bnd_out, mask = TRUE)
+  dem$dem_km <- dem$output_hh / 1000
+} else {
+  dem <- rast(here("data", "output_hh.tif")) %>%
+    project(crs_nepal$input) %>%
+    # crop(st_as_sfc(landslides_bbox), mask = TRUE)
+    crop(bnd_out, mask = TRUE)
+  # dem <- project(dem, crs_nepal$input)
+  # dem <- dem %>% crop(bnd_out, mask = TRUE)
+  dem$dem_km <- dem$output_hh / 1000
+
+  writeRaster(dem, here("data", "cop30dem.tif"), overwrite = TRUE)
+}
 if (FALSE) {
-  if (file.exists(here("data", "cop30dem.tif"))) {
-    dem <- rast(here("data", "cop30dem.tif")) %>%
-      project(crs_nepal$input) %>%
-      crop(bnd_out, mask = TRUE)
-  } else {
-    dem <- rast(here("data", "output_hh.tif")) %>%
-      project(crs_nepal$input) %>%
-      # crop(st_as_sfc(landslides_bbox), mask = TRUE)
-      crop(bnd_out, mask = TRUE)
-    # dem <- project(dem, crs_nepal$input)
-    # dem <- dem %>% crop(bnd_out, mask = TRUE)
-    dem$dem_km <- dem$output_hh / 1000
-    
-    writeRaster(dem, here("data", "cop30dem.tif"), overwrite = TRUE)
-  }
   dem <- rast(here("data", "lsdtt", "lanczos_", "cop30dem.bil")) %>%
     project(crs_nepal$input) %>%
     crop(bnd_out, mask = TRUE)
@@ -375,7 +376,7 @@ if (FALSE) {
 
 
 
-  # TODO even kernel with larger radius
+  # even kernel with larger radius
   # norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)}
 
   if (file.exists(here("data", "dem_terrain_focal.tif")) &&
@@ -429,7 +430,7 @@ if (FALSE) {
 
 
   # nepal
-  # TODO curvature/twi/spi/tri/distance to river/stream sediment transport index(STI)
+  # curvature/twi/spi/tri/distance to river/stream sediment transport index(STI)
   # https://www.esri.com/arcgis-blog/products/product/imagery/understanding-curvature-rasters/
   # https://www.rdocumentation.org/packages/spatialEco/versions/2.0-2/topics/curvature
   if (file.exists(here("data", "dem_curvature.tif"))) {
@@ -479,8 +480,6 @@ nepal_geo %<-% {
     st_transform(crs = crs_nepal) %>%
     st_intersection(bnd_out)
 }
-# TODO
-# Siwalik Group to remove from the boundary
 
 # nepal_geo_gangetic <- nepal_geo[nepal_geo$ROCK_TYPES == "Gangetic Plain",]
 #
@@ -507,18 +506,12 @@ nepal_geo_ref <- nepal_geo_df %>%
   filter(total_count != 0) %>%
   pull(ROCK_TYPES)
 
-# 20250114 replace category with no landslides with NA
-# nepal_geo$ROCK_TYPES <- ifelse(nepal_geo$ROCK_TYPES %in% nepal_geo_ref,
-#                                 nepal_geo$ROCK_TYPES, NA
-# )
-
 nepal_geo$ROCK_TYPES_ref <- ifelse(nepal_geo$ROCK_TYPES %in% nepal_geo_ref,
   0, 1
 )
 
 nepal_geo$ROCK_TYPES <- as.factor(nepal_geo$ROCK_TYPES)
 
-# 20250124 Gangetic Plain still problematic, so we replace it with Siwalik Group
 nepal_geo <- nepal_geo %>%
   #   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Bhimphedi Group", "Nawakot Group")) %>%
   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Gangetic Plain", "Siwalik Group"))
@@ -556,7 +549,7 @@ nepal_geo <- nepal_geo %>%
 # ),
 # package = "stars")
 # tif <- read_stars(tifpath)
-# landuse <- st_as_sf(tif)
+# landcover <- st_as_sf(tif)
 
 
 # mesh --------------------------------------------------------------------

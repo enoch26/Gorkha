@@ -6,11 +6,9 @@ library(patchwork)
 # > ls( pattern = "fit")
 # [1] "fit1a" "fit1b" "fit2a" "fit2b"
 mod_nm <- ls(pattern = "fit")
-pred_nm <- ls(pattern = "fp")
 mod_names_a <- mod_nm[seq_along(mod_nm) %% 2 > 0]
 mod_names_b <- mod_nm[seq_along(mod_nm) %% 2 == 0]
-pred_lst_a <- pred_nm[seq_along(pred_nm) %% 2 > 0]
-pred_lst_b <- pred_nm[seq_along(pred_nm) %% 2 == 0]
+
 
 ### sf pts ------------------------------------------------------------------
 
@@ -122,7 +120,7 @@ fp5b %<-% {
   )
 }
 
-if (FALSE) {
+
   fp6a %<-% {
     predict(fit6a,
       newdata = pxl,
@@ -138,7 +136,7 @@ if (FALSE) {
       n.samples = 100, seed = seed[1]
     )
   }
-
+  if (FALSE) {
   fp7a %<-% {
     predict(fit7a,
       newdata = pxl,
@@ -174,37 +172,49 @@ if (FALSE) {
 plan(sequential)
 
 
+pred_nm <- ls(pattern = "fp")
+pred_lst_a <- pred_nm[seq_along(pred_nm) %% 2 > 0]
+pred_lst_b <- pred_nm[seq_along(pred_nm) %% 2 == 0]
+
 
 # ggplot() + gg(fp5a$landuse["mean"], geom = "tile") +   scale_fill_viridis_c() +
 #   geom_sf(data = landuse_8wp, fill = "red") +
-#   geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red")
+#   geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red")
 # ggsave(paste0("figures/model/check_landuse.pdf"), width = tw, height = tw/2)
 
 # https://jayrobwilliams.com/posts/2021/05/geom-sf-facet
 # TODO with future_lapply
-
-if (to_plot) {
-  for (i in 1:length(pred_lst_a)) {
-    p_lst_a <- list()
-    ff <- get(mod_names_a[i])$bru_info$lhoods[[1]]$formula
-    for (j in 1:length(get(pred_lst_a[i]))) {
-      if (names(get(pred_lst_a[[i]])[j]) != "Intercept") {
-        p_lst_a[[j]] <- ggplot() +
-          gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-          scale_fill_viridis_c(option = "D") +
-          geom_sf(data = landslides_c, aes(col = "red", alpha = log(Area_m2)), size = 0.1) +
-          geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
-          ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
-      } else {
-        p_lst_a[[j]] <- p_textbox(get(pred_lst_a[[i]])[[j]]["mean"])
-        # p_lst_a[[j]] <- plot_spacer() + ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+if(FALSE){
+  if (to_plot) {
+    for (i in 1:length(pred_lst_a)) {
+      p_lst_a <- list()
+      ff <- get(mod_names_a[i])$bru_info$lhoods[[1]]$formula
+      for (j in 1:length(get(pred_lst_a[i]))) {
+        if (names(get(pred_lst_a[[i]])[j]) != "Intercept") {
+          p_lst_a[[j]] <- ggplot() +
+            gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
+            scale_fill_viridis_c(option = "D") +
+            geom_sf(data = landslides_c, aes(col = "red", alpha = log(Area_m2)), size = 0.1) +
+            geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+            ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+        } else {
+          p_lst_a[[j]] <- ggplot() + gg(get(pred_lst_a[[i]])[[j-1]]["mean"], geom = "tile") + 
+            annotate(geom = 'label', 
+                     label = paste0("Intercept = ", get(pred_lst_a[[i]])[[j]]["mean"]),
+                     x = 400, y = 3150) +
+            scale_fill_viridis_c(option = "D") +
+            geom_sf(data = landslides_c, aes(col = "red", alpha = log(Area_m2)), size = 0.1) +
+            geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+            ggtitle(paste0(names(get(pred_lst_a[[i]])[j-1])))
+        }
       }
+      wrap_plots(p_lst_a[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+        plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
+      print(paste0(deparse(ff, width.cutoff = 150L)))
+      ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lds.png"), width = tw, height = 1.25 * tw)
     }
-    wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
-      plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
-    print(paste0(deparse(ff, width.cutoff = 150L)))
-    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lds.pdf"), width = tw, height = 1.25 * tw)
   }
+  
 }
 
 if (to_plot) {
@@ -216,17 +226,53 @@ if (to_plot) {
         p_lst_a[[j]] <- ggplot() +
           gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
           scale_fill_viridis_c(option = "D") +
-          geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
           ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
       } else {
-        p_lst_a[[j]] <- p_textbox(get(pred_lst_a[[i]])[[j]]["mean"])
-        # p_lst_a[[j]] <- plot_spacer() + ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+        p_lst_a[[j]] <- ggplot() + gg(get(pred_lst_a[[i]])[[j-1]]["mean"], geom = "tile") + 
+          annotate(geom = 'label', 
+                   label = paste0("Intercept = ", get(pred_lst_a[[i]])[[j]]["mean"]),
+                   x = 400, y = 3150) +
+          scale_fill_viridis_c(option = "D") +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_a[[i]])[j-1])))
       }
     }
-    wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+    wrap_plots(p_lst_a[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
     ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, ".pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, ".png"), width = tw, height = 1.25 * tw)
+  }
+}
+
+if (to_plot) {
+  for (i in 1:length(pred_lst_a)) {
+    p_lst_a <- list()
+    for (j in 1:length(get(pred_lst_a[i]))) {
+      ff <- get(mod_names_a[i])$bru_info$lhoods[[1]]$formula
+      if (names(get(pred_lst_a[[i]])[j]) != "Intercept") {
+        p_lst_a[[j]] <- ggplot() +
+          gg(get(pred_lst_a[[i]])[[j]], aes(fill = logit_inv(sd/mean)), geom = "tile") +
+          scale_fill_viridis_c(option = "D") +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+      } else {
+        p_lst_a[[j]] <- ggplot() + gg(get(pred_lst_a[[i]])[[j-1]],
+                                      aes(fill = logit_inv(sd/mean)), geom = "tile") + 
+          annotate(geom = 'label',
+                   label = paste0("Intercept CV = ", logit_inv(get(pred_lst_a[[i]])[[j]]["sd"]/get(pred_lst_a[[i]])[[j]]["mean"])),
+                   x = 400, y = 3150) +
+          scale_fill_viridis_c(option = "D") +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_a[[i]])[j-1])))
+      }
+    }
+    wrap_plots(p_lst_a[-1], ncol = 2) + 
+      plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
+    print(paste0(deparse(ff, width.cutoff = 150L)))
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_cv.pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_cv.png"), width = tw, height = 1.25 * tw)
   }
 }
 
@@ -240,7 +286,7 @@ if (to_plot) {
 #         scale_fill_viridis_c(option = "C") +
 #         # geom_sf(data=eks::st_get_contour(Sta_den, cont=c(20,40,60,80)), fill=NA) +
 #         # geom_sf(data = bnd, col = "red", fill = NA) +
-#         geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
+#         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
 #         ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
 #     }
 #     wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
@@ -252,74 +298,35 @@ if (to_plot) {
 
 # lambda_sc <- scale_fill_viridis_c(limits = c(-1, 15), name = "lambda")
 # intensity in exponential scale
-if (to_plot) {
-  for (i in 1:length(pred_lst_a)) {
-    p_lst_alambda <- list()
-    for (j in 1:1) {
-      p_lst_alambda[[j]] <- ggplot() +
-        gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-        scale_fill_viridis_c(
-          option = "D",
-          limits = c(
-            median(get(pred_lst_a[[i]])[[j]]$mean),
-            max(get(pred_lst_a[[i]])[[j]]$mean)
-          ),
-          name = "lambda"
-        ) +
-        # geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
-        geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
-        ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+if(FALSE){
+  if (to_plot) {
+    for (i in 1:length(pred_lst_a)) {
+      p_lst_alambda <- list()
+      for (j in 1:1) {
+        p_lst_alambda[[j]] <- ggplot() +
+          gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
+          scale_fill_viridis_c(
+            option = "D",
+            limits = c(
+              median(get(pred_lst_a[[i]])[[j]]$mean),
+              max(get(pred_lst_a[[i]])[[j]]$mean)
+            ),
+            name = "lambda"
+          ) +
+          # geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+      }
+      wrap_plots(p_lst_alambda, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+        plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
+      print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2, 1, 3)])))
+      ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lambda.pdf"), width = tw, height = tw)
     }
-    wrap_plots(p_lst_alambda, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
-      plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
-    print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2, 1, 3)])))
-    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lambda.pdf"), width = tw, height = tw)
   }
+  
 }
 
-# contour
-# if (to_plot) {
-#   for (i in 1:length(pred_lst_a)) {
-#     p_lst_alambda <- list()
-#     for (j in 1:1) {
-#       p_lst_alambda[[j]] <- ggplot() +
-#         gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-#         scale_fill_viridis_c(option = "A",
-#                              limits =  c(median(get(pred_lst_a[[i]])[[j]]$mean),
-#                                          max(get(pred_lst_a[[i]])[[j]]$mean)),
-#                              name = "lambda") +
-#         # geom_sf(data=eks::st_get_contour(Sta_den, cont=c(20,40,60,80)), fill=NA) +
-#         geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
-#         ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
-#     }
-#     wrap_plots(p_lst_alambda, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
-#       plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
-#     print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2,1,3)])))
-#     ggsave(paste0("figures/", pred_lst_a[i], "_contour_lambda.pdf"), width = tw, height = tw)
-#   }
-# }
 
-#
-# p_lst_a <- list()
-# library(future.apply)
-# p_lst_a <- future_lapply(1:length(mod_names_a), function(i) {
-#   for (i in 1:length(pred_lst_a)) {
-#     p_lst_a <- list()
-#     for (j in 1:length(get(pred_lst_a[i]))) {
-#       p_lst_a[[j]] <- ggplot() +
-#         gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-#         scale_fill_viridis_c(option = "C") +
-#         geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
-#         geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
-#         ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
-#     }
-#     wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
-#       plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
-#     print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2,1,3)])))
-#     ggsave(paste0("figures/", pred_lst_a[i], ".pdf"), width = tw, height = 1.25*tw)
-#   }
-# }
-# )
 
 if (to_plot) {
   for (i in 1:length(pred_lst_b)) {
@@ -330,49 +337,58 @@ if (to_plot) {
         p_lst_b[[j]] <- ggplot() +
           gg(get(pred_lst_b[[i]])[[j]]["mean"], geom = "tile") +
           scale_fill_viridis_c(option = "D") +
-          # geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
-          geom_sf(data = st_as_sfc(landslides_bbox), fill = NA, color = "red") +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
           ggtitle(paste0(names(get(pred_lst_b[[i]])[j])))
       } else {
-        p_lst_b[[j]] <- p_textbox(get(pred_lst_b[[i]])[[j]]["mean"])
-        # p_lst_b[[j]] <- plot_spacer() +
-        #   ggtitle(paste0(names(get(pred_lst_b[[i]])[j])))
+        p_lst_b[[j]] <- ggplot() + gg(get(pred_lst_b[[i]])[[j-1]]["mean"], geom = "tile") + 
+          annotate(geom = 'label', 
+                   label = paste0("Intercept = ", get(pred_lst_b[[i]])[[j]]["mean"]),
+                   x = 400, y = 3150) +
+          scale_fill_viridis_c(option = "D") +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_b[[i]])[j-1])))
       }
     }
-    wrap_plots(p_lst_b, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+    wrap_plots(p_lst_b[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
-    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, "_nolds.pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, ".pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, ".png"), width = tw, height = 1.25 * tw)
   }
 }
 
+if (to_plot) {
+  for (i in 1:length(pred_lst_b)) {
+    p_lst_b <- list()
+    for (j in 1:length(get(pred_lst_b[i]))) {
+      ff <- get(mod_names_b[i])$bru_info$lhoods[[1]]$formula
+      if (names(get(pred_lst_b[[i]])[j]) != "Intercept") {
+        p_lst_b[[j]] <- ggplot() +
+          gg(get(pred_lst_b[[i]])[[j]], aes(fill = logit_inv(sd/mean)), geom = "tile") +
+          scale_fill_viridis_c(option = "D") +
+          # geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_b[[i]])[j])))
+      } else {
+        p_lst_b[[j]] <- ggplot() + gg(get(pred_lst_b[[i]])[[j-1]],
+                                      aes(fill = logit_inv(sd/mean)), geom = "tile") + 
+          annotate(geom = 'label',
+                   label = paste0("Intercept CV = ", logit_inv(get(pred_lst_b[[i]])[[j]]["sd"]/get(pred_lst_b[[i]])[[j]]["mean"])),
+                   x = 400, y = 3150) +
+          scale_fill_viridis_c(option = "D") +
+          # geom_sf(data = landslides_c, aes(col = "red", alpha = log(Area_m2)), size = 0.1) +
+          geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+          ggtitle(paste0(names(get(pred_lst_b[[i]])[j-1])))
+      }
+    }
+    wrap_plots(p_lst_b[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+      plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
+    print(paste0(deparse(ff, width.cutoff = 150L)))
+    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, "_cv.pdf"), width = tw, height = 1.25 * tw)
+    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, "_cv.png"), width = tw, height = 1.25 * tw)
+  }
+}
 
-# if (to_plot) {
-#   for (i in 1:length(pred_lst_a)) {
-#     for (j in 1:length(get(pred_lst_a[i]))) {
-#       ggplot() +
-#         gg(get(pred_lst_a[i])["mean"], geom = "tile") +
-#         scale_fill_viridis_c(option = "C") +
-#         geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
-#         ggtitle(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3])))
-#       print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2,1,3)])))
-#       ggsave(paste0("figures/", pred_lst_a[i], ".pdf"), width = tw, height = tw / 2)
-#     }
-#   }
-# }
-# paste0(paste0(get(mod_names_a[1])$bru_info$lhoods[[1]]$formula[c(2,1,3)]))
-
-# if (to_plot) {
-#   for (i in 1:length(pred_lst_b)) {
-#     ggplot() +
-#       gg(get(pred_lst_b[i])["mean"], geom = "tile") +
-#       scale_fill_viridis_c(option = "C") +
-#       geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
-#       ggtitle(paste0(paste0(get(mod_names_b[i])$bru_info$lhoods[[1]]$formula[3])))
-#     print(paste0(paste0(get(mod_names_b[i])$bru_info$lhoods[[1]]$formula[c(2,1,3)])))
-#     ggsave(paste0("figures/", pred_lst_b[i], ".pdf"), width = tw, height = tw / 2)
-#   }
-# }
 
 
 # RW2 ---------------------------------------------------------------------
@@ -415,7 +431,7 @@ for (i in c(mod_names_a, mod_names_b)) {
 # txt summary output ------------------------------------------------------
 
 
-sink("figures/model/mod_lst_a.txt")
+sink(paste0("figures/model/mod_lst_a", nm_chess," .txt"), append = TRUE)
 for (i in 1:length(mod_names_a)) {
   print(mod_names_a[i])
   print(summary(get(mod_names_a[i])))
@@ -426,7 +442,7 @@ for (i in 1:length(mod_names_a)) {
 }
 sink()
 
-sink("figures/model/mod_lst_b.txt")
+sink(paste0("figures/model/mod_lst_b", nm_chess,".txt"), append = TRUE)
 for (i in 1:length(mod_names_b)) {
   print(mod_names_b[i])
   print(summary(get(mod_names_b[i])))
@@ -440,6 +456,55 @@ sink()
 plan(sequential)
 
 # future.apply ------------------------------------------------------------
+
+
+## contour -----------------------------------------------------------------
+
+# if (to_plot) {
+#   for (i in 1:length(pred_lst_a)) {
+#     p_lst_alambda <- list()
+#     for (j in 1:1) {
+#       p_lst_alambda[[j]] <- ggplot() +
+#         gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
+#         scale_fill_viridis_c(option = "A",
+#                              limits =  c(median(get(pred_lst_a[[i]])[[j]]$mean),
+#                                          max(get(pred_lst_a[[i]])[[j]]$mean)),
+#                              name = "lambda") +
+#         # geom_sf(data=eks::st_get_contour(Sta_den, cont=c(20,40,60,80)), fill=NA) +
+#         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+#         ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+#     }
+#     wrap_plots(p_lst_alambda, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+#       plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
+#     print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2,1,3)])))
+#     ggsave(paste0("figures/", pred_lst_a[i], "_contour_lambda.pdf"), width = tw, height = tw)
+#   }
+# }
+
+
+
+
+#
+# p_lst_a <- list()
+# library(future.apply)
+# p_lst_a <- future_lapply(1:length(mod_names_a), function(i) {
+#   for (i in 1:length(pred_lst_a)) {
+#     p_lst_a <- list()
+#     for (j in 1:length(get(pred_lst_a[i]))) {
+#       p_lst_a[[j]] <- ggplot() +
+#         gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
+#         scale_fill_viridis_c(option = "C") +
+#         geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.3) +
+#         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+#         ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+#     }
+#     wrap_plots(p_lst_a, ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
+#       plot_annotation((paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[3]))))
+#     print(paste0(paste0(get(mod_names_a[i])$bru_info$lhoods[[1]]$formula[c(2,1,3)])))
+#     ggsave(paste0("figures/", pred_lst_a[i], ".pdf"), width = tw, height = 1.25*tw)
+#   }
+# }
+# )
 # TODO automated prediction but too large memory as a list
 # predict_lst_a <- future.apply::future_lapply(1:length(mod_names_a), function(i) {
 #   ff <- get(mod_names_a[i])$bru_info$lhoods[[1]]$formula

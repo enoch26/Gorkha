@@ -68,11 +68,6 @@ ggsave("figures/landslides_density.pdf", width = tw, height = tw)
 
 landslides_c_$logarea_m2_gp <- cut(landslides_c_$logarea_m2, breaks = 5)
 
-
-
-
-
-
 p <- ggplot(data = landslides_c_, aes(x,y)) + 
   # This would create filled polygons that we use for create our polygon
   geom_density2d_filled(contour_var = "ndensity") +

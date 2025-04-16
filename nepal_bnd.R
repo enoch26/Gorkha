@@ -1,3 +1,8 @@
+if(is.null(CV_thin) & is.null(CV_chess)){
+  CV_thin <- FALSE
+  CV_chess <- FALSE
+}
+
 nepal_nc %<-% {
   st_read(here(
     "data", "Local Unit",
@@ -117,6 +122,7 @@ ksn_tag <- rast(here("data", "ksn_tag_near.tif")) %>%
   crop(bnd_out, mask = TRUE) %>%
   clamp(1, values = TRUE)
 log_ksn_tag <- log(ksn_tag$cop30dem_channel_tagged_pixels)
+sqrt_ksn_tag <- sqrt(ksn_tag$cop30dem_channel_tagged_pixels)
 # rm(ksn_tag)
 
 landslides_c$log_ksn <- extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE)
