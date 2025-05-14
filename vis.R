@@ -51,7 +51,7 @@ if (to_plot) {
       geom_sf(data = bnd_out, col = "red", fill = NA)
     ggsave("figures/model/landuse_8wp.pdf", width = tw, height = tw/2)     
   p_geo <- ggplot() +
-    geom_sf(data = nepal_geo, aes(fill = ROCK_TYPES)) +
+    geom_sf(data = geology, aes(fill = ROCK_TYPES)) +
     labs(fill = "ROCK_TYPES") +
     geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.1) +
     geom_sf(data = bnd, col = "red", fill = NA) +
@@ -68,7 +68,7 @@ if (to_plot) {
   ggsave(here("figures", "nepal_geo8pg.pdf"), width = tw, height = tw / 2)
   
   ggplot() +
-    geom_spatraster(data = nepal_geo_rast, aes(fill = ROCK_TYPES)) +
+    geom_spatraster(data = geology_rast, aes(fill = ROCK_TYPES)) +
     labs(fill = "ROCK_TYPES") +
     geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.1) +
     geom_sf(data = bnd, col = "red", fill = NA) +
@@ -77,7 +77,7 @@ if (to_plot) {
 
 
   ggplot() +
-    geom_sf(data = nepal_geo, aes(fill = LITHO_ID)) +
+    geom_sf(data = geology, aes(fill = LITHO_ID)) +
     labs(fill = "LITHO_ID") +
     geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.1) +
     geom_sf(data = bnd, col = "red", fill = NA)

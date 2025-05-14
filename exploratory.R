@@ -4,10 +4,10 @@ dem_landslides <- terra::extract(dem$dem_km, vect(landslides_c), ID = FALSE)
 terrain_landslides <- terra::extract(dem_terrain_mask, vect(landslides_c), ID = FALSE)
 pga_landslides <- terra::extract(pga_mean_raster, vect(landslides_c), ID = FALSE)
 focal_landslides <- terra::extract(dem_terrain_focal2$relief, vect(landslides_c), ID = FALSE)
-geo_landslides <- eval_spatial(data = nepal_geo, where = landslides_c$geometry , 
+geo_landslides <- eval_spatial(data = geology, where = landslides_c$geometry , 
                                layer = "ROCK_TYPES")
 
-geo_landslides <- st_intersection(landslides_c, nepal_geo)
+geo_landslides <- st_intersection(landslides_c, geology)
 landcover_landslides <- st_intersection(landslides_c, landcover)
 
 p_geo <- ggplot(geo_landslides, aes(x = ROCK_TYPES)) +

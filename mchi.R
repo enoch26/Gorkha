@@ -187,25 +187,32 @@ ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")
   # crop(bnd_out, mask = TRUE) %>%
   clamp(lower = 1, values = TRUE)
 
-# 14982 basin_info
-long <- 85.5
-lat <- 28.2
+if(FALSE){
+  # 14982 basin_info
+  long <- 85.5
+  lat <- 28.2
+  
+  long <- 85.25
+  lat <- 28
+  
+  long <- 84.6
+  lat <- 28
+  
+  long <- 85.2
+  lat <- 28.2
+  
+  # to fix glacier landscapes
+  long <- 85
+  lat <- 28.5
+}
 
-long <- 85.25
-lat <- 28
+for (i in c(14982, 15329, 17757, 22048)) {
+  source("mchi_zm.R")
+}
+for (i in c(17757)) {
+  source("mchi_zm.R")
+}
 
-long <- 84.6
-lat <- 28
-
-long <- 85.2
-lat <- 28.2
-
-# to fix glacier landscapes
-long <- 85
-lat <- 28.5
-
-
-source("mchi_zm.R")
 
 
 

@@ -1,168 +1,61 @@
 concavity <- FALSE
+# concavity <- TRUE
 # find the basin id for zoomed area
-pts <- st_as_sf(data.frame(long = long, lat = lat),
-  coords = c("long", "lat"),
-  crs = 4326
-) %>% st_transform(crs = crs_nepal)
+# long <- 85.5
+# lat <- 27.7
+# long <- 85
+# lat <- 27.6
 
-basin <- rast(here("data", "lsdtt", fdr, "cop30dem_AllBasins.bil")) %>%
-  project(crs_nepal$input, threads = TRUE) %>%
-  crop(bnd, mask = TRUE)
-basin_info <- extract(basin, pts)
+if(FALSE){
+  pts <- st_as_sf(data.frame(long = long, lat = lat),
+    coords = c("long", "lat"),
+    crs = 4326
+  ) %>% st_transform(crs = crs_nepal)
+  
+  basin <- rast(here("data", "lsdtt", fdr, "cop30dem_AllBasins.bil")) %>%
+    project(crs_nepal$input, threads = TRUE) %>%
+    crop(bnd, mask = TRUE)
+  basin_info <- extract(basin, pts)
+  basin_zm <- basin %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  basin_zm_sf <- as_sf(as.polygons(basin_zm))
+}
 
+# run this
 # 14982, 15329, 17757, 22048
-basin_zm <- basin %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-basin_zm_sf <- as_sf(as.polygons(basin_zm))
+# for (l in c(14982, 15329, 17757, 22048)){source("mchi_zm.R")}
+# for (l in c(17757)){source("mchi_zm.R")}
+
+
 
 # mchi_sf_zm --------------------------------------------------------------
-
-
-mchi_sf_zm <- mchi_sf %>%
-  st_intersection(st_as_sfc(basin_zm_sf))
-landslides_zm <- st_intersection(landslides_c, st_as_sfc(basin_zm_sf))
-landslides_poly_zm <- st_intersection(landslides, st_as_sfc(basin_zm_sf))
-
-hs$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-hs_zm <- crop(hs, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-
-rf2ch$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-rf2ch_zm <- crop(rf2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-
-fd2ch$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-fd2ch_zm <- crop(fd2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-
-ksn_tag$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-ksn_tag_zm <- crop(ksn_tag, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-
-
-if (FALSE) {
-  basin_zm <- basin %>% filter(cop30dem_AllBasins == 2228)
+  basin_zm <- basin %>% filter(cop30dem_AllBasins == l)
+  # basin_zm <- basin %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
   basin_zm_sf <- as_sf(as.polygons(basin_zm))
-
-  ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels_near.tif")) %>%
-    # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
-    project(crs_nepal$input, threads = TRUE) %>%
-    crop(bnd_out, mask = TRUE) %>%
-    clamp(1, values = TRUE)
-
-  basin_ <- basin %>% crop(bnd_out, mask = TRUE)
-
-  ksn_tag$cop30dem_AllBasins <- basin_$cop30dem_AllBasins
-  ksn_tag_zm <- crop(ksn_tag, basin_zm_sf) %>% filter(cop30dem_AllBasins == 2228)
-
-  ksn_bnd <- boundaries(ksn_tag_zm$cop30dem_channel_tagged_pixels)
-
-  ggplot() +
-    gg(data = log(ksn_tag_zm$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-
-  ggsave("ksn_tag_zm2228.pdf", width = tw, height = tw / 2)
-
-  ksn_tag_zm_ <- ksn_tag_zm$cop30dem_channel_tagged_pixels %>% clamp(lower = exp(3), values = FALSE)
-
-  ggplot() +
-    gg(data = log(ksn_tag_zm_$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-
-  ggsave("ksn_tag_zm2228_.pdf", width = tw, height = tw / 2)
-
-  ksn_tag_zm_near <- interpNear(ksn_tag_zm_, as.points(ksn_tag_zm_),
-    interpolate = FALSE, # from a geoscience perspective, it is better to use FALSE
-    radius = 2, # circle seems good enough
-    field = "cop30dem_channel_tagged_pixels"
-    # threads = FALSE # when interpolate = TRUE no way to control threads
-  )
-
-  ggplot() +
-    gg(data = log(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-
-  ggsave("ksn_tag_zm2228_near.pdf", width = tw, height = tw / 2)
-
-  writeRaster(ksn_tag_zm_near$cop30dem_channel_tagged_pixels, here("data", "lsdtt", fdr, "ksn_tag_zm_near2228.tif"), overwrite = TRUE)
-
-  # https://rdrr.io/cran/terra/man/cover.html
-  # TODO cover this one ksn_tag; have to make those fall in selected basin NA
-  # https://dieghernan.github.io/tidyterra/reference/drop_na.Spat.html
-
-
-
-  ksn_tag_ <- ksn_tag %>%
-    mutate(
-      cop30dem_channel_tagged_pixels =
-        ifelse(cop30dem_AllBasins == 2228, NA, cop30dem_channel_tagged_pixels)
-    )
-  ggplot() +
-    gg(data = log(ksn_tag_$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-  ggsave("ksn_tag_.pdf", width = tw, height = tw / 2)
-  ksn_tag_zm_near <- rast(here("data", "lsdtt", fdr, "ksn_tag_zm_near2228.tif")) %>%
-    project(crs_nepal$input, threads = TRUE)
-  # %>% crop(ksn_bnd, mask = TRUE)
-  ggplot() +
-    gg(data = log(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-  ggsave("ksn_tag_near.pdf", width = tw, height = tw / 2)
-
-  ksn_tag_ <- merge(ksn_tag_zm_near$cop30dem_channel_tagged_pixels, ksn_tag_$cop30dem_channel_tagged_pixels)
-  ggplot() +
-    gg(data = log(ksn_tag_$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-  ggsave("ksn_tag_merged.pdf", width = tw, height = tw / 2)
-
-
-  ksn_tag_near <- interpNear(ksn_tag_, as.points(ksn_tag_),
-    interpolate = FALSE, # from a geoscience perspective, it is better to use FALSE
-    radius = 4, # circle seems good enough
-    field = "cop30dem_channel_tagged_pixels"
-    # threads = FALSE # when interpolate = TRUE no way to control threads
-  )
-  ggplot() +
-    gg(data = log(ksn_tag_near$cop30dem_channel_tagged_pixels)) +
-    scale_fill_viridis_c(na.value = "transparent")
-  ggsave("ksn_tag_near.pdf", width = tw, height = tw / 2)
-  writeRaster(ksn_tag_near$cop30dem_channel_tagged_pixels, here("data", "ksn_tag_near.tif"), overwrite = TRUE)
-}
-
-
-
-# with get_tiles
-# https://dieghernan.github.io/202205_tidyterra/
-tile <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13)
-ksn_tag_zm$log_cop30dem_channel_tagged_pixels <- log(ksn_tag_zm$cop30dem_channel_tagged_pixels)
-mchi_sf_zm$log_m_chi <- log(mchi_sf_zm$m_chi)
-
-# farridge < 0 ------------------------------------------------------------
-
-
-
-
-if (FALSE) {
-  rf2fr_zero <- rf2fr %>% filter(cop30dem_RELIEFTOFARRIDGE < 1e-10)
-  rf2fr_zero$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-  rf2fr_zero_zm <- crop(rf2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-  fd2fr_zero <- fd2fr %>% filter(cop30dem_FDTOFARRIDGE < .1)
-  fd2fr_zero$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-  fd2fr_zero_zm <- crop(fd2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-  fd2fr$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-  fd2fr_zm <- crop(fd2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-  ggplot() +
-    geom_spatraster_rgb(data = tile, alpha = 0.5) +
-    gg(
-      data = mchi_sf_zm, color = "red",
-      # geom = "tile",
-      # alpha = .5,
-      size = 0.1
-    ) +
-    scale_fill_viridis_c(na.value = "transparent") +
-    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-    geom_spatraster(data = fd2fr_zero_zm$cop30dem_FDTOFARRIDGE, maxcell = 5e+07) +
-    scale_fill_continuous(na.value = "transparent") +
-    ggspatial::annotation_scale(location = "br") +
-    ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
-  ggsave(paste0("data/lsdtt/", fdr, "/figure/fd2fr_zero_zm.pdf"), width = tw, height = tw / 2)
-}
-
+  mchi_sf_zm <- mchi_sf %>%
+    st_intersection(st_as_sfc(basin_zm_sf))
+  landslides_zm <- st_intersection(landslides_c, st_as_sfc(basin_zm_sf))
+  landslides_poly_zm <- st_intersection(landslides, st_as_sfc(basin_zm_sf))
+  
+  # hs$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  # hs_zm <- crop(hs, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  # 
+  # rf2ch$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  # rf2ch_zm <- crop(rf2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == l)
+  # rf2ch_zm <- crop(rf2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  # 
+  # fd2ch$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  # fd2ch_zm <- crop(fd2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == l)
+  # fd2ch_zm <- crop(fd2ch, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  
+  ksn_tag$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  ksn_tag_zm <- crop(ksn_tag, basin_zm_sf) %>% filter(cop30dem_AllBasins == l)
+  # ksn_tag_zm <- crop(ksn_tag, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  
+  # with get_tiles
+  # https://dieghernan.github.io/202205_tidyterra/
+  tile <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13)
+  ksn_tag_zm$log_cop30dem_channel_tagged_pixels <- log(ksn_tag_zm$cop30dem_channel_tagged_pixels)
+  mchi_sf_zm$log_m_chi <- log(mchi_sf_zm$m_chi)
 
 # find the nearest pairs
 mchi_lds_pairs <- st_nearest_feature(landslides_zm, mchi_sf_zm)
@@ -194,7 +87,8 @@ if (to_plot) {
       ) +
       geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
       scale_color_viridis_c()
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
+    # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
   }
 
 
@@ -214,7 +108,9 @@ if (to_plot) {
       scale_color_viridis_c(name = expression(log_k[sn])) +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
+    # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile.png"), width = tw, height = tw / 2, dpi = 100)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
 
     ggplot() +
       # geom_spatraster_rgb(data = tile) +
@@ -235,7 +131,9 @@ if (to_plot) {
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
 
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tag.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.png"), width = tw, height = tw / 2, dpi =100)
+    # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tag.pdf"), width = tw, height = tw / 2)
 
     ggplot() +
       geom_spatraster_rgb(data = tile) +
@@ -251,7 +149,8 @@ if (to_plot) {
       scale_color_viridis_c(name = expression(log_k[sn])) +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile_poly.pdf"), width = tw, height = tw / 2)
+    # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile_poly.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_poly.png"), width = tw, height = tw / 2, dpi = 100)
   }
 
   ## mchi analysis -----------------------------------------------------------
@@ -369,6 +268,127 @@ if (concavity) {
     patchwork::wrap_plots(mchi_ls, guide = "collect", byrow = TRUE, ncol = 3) + plot_annotation(tag_levels = 'A') &
       theme(legend.position = "bottom")
     ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.png"), width = tw, height = tw / 2, dpi = 100)
     # ggsave(paste0("data/lsdtt/", j, "_", i, ".pdf"), width = tw, height = tw / 2)
   }
+}
+
+if (FALSE) {
+  basin_zm <- basin %>% filter(cop30dem_AllBasins == 2228)
+  basin_zm_sf <- as_sf(as.polygons(basin_zm))
+  
+  ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels_near.tif")) %>%
+    # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
+    project(crs_nepal$input, threads = TRUE) %>%
+    crop(bnd_out, mask = TRUE) %>%
+    clamp(1, values = TRUE)
+  
+  basin_ <- basin %>% crop(bnd_out, mask = TRUE)
+  
+  ksn_tag$cop30dem_AllBasins <- basin_$cop30dem_AllBasins
+  ksn_tag_zm <- crop(ksn_tag, basin_zm_sf) %>% filter(cop30dem_AllBasins == 2228)
+  
+  ksn_bnd <- boundaries(ksn_tag_zm$cop30dem_channel_tagged_pixels)
+  
+  ggplot() +
+    gg(data = log(ksn_tag_zm$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  
+  ggsave("ksn_tag_zm2228.pdf", width = tw, height = tw / 2)
+  
+  ksn_tag_zm_ <- ksn_tag_zm$cop30dem_channel_tagged_pixels %>% clamp(lower = exp(3), values = FALSE)
+  
+  ggplot() +
+    gg(data = log(ksn_tag_zm_$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  
+  ggsave("ksn_tag_zm2228_.pdf", width = tw, height = tw / 2)
+  
+  ksn_tag_zm_near <- interpNear(ksn_tag_zm_, as.points(ksn_tag_zm_),
+                                interpolate = FALSE, # from a geoscience perspective, it is better to use FALSE
+                                radius = 2, # circle seems good enough
+                                field = "cop30dem_channel_tagged_pixels"
+                                # threads = FALSE # when interpolate = TRUE no way to control threads
+  )
+  
+  ggplot() +
+    gg(data = log(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  
+  ggsave("ksn_tag_zm2228_near.pdf", width = tw, height = tw / 2)
+  
+  writeRaster(ksn_tag_zm_near$cop30dem_channel_tagged_pixels, here("data", "lsdtt", fdr, "ksn_tag_zm_near2228.tif"), overwrite = TRUE)
+  
+  # https://rdrr.io/cran/terra/man/cover.html
+  # TODO cover this one ksn_tag; have to make those fall in selected basin NA
+  # https://dieghernan.github.io/tidyterra/reference/drop_na.Spat.html
+  
+  
+  
+  ksn_tag_ <- ksn_tag %>%
+    mutate(
+      cop30dem_channel_tagged_pixels =
+        ifelse(cop30dem_AllBasins == 2228, NA, cop30dem_channel_tagged_pixels)
+    )
+  ggplot() +
+    gg(data = log(ksn_tag_$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  ggsave("ksn_tag_.pdf", width = tw, height = tw / 2)
+  ksn_tag_zm_near <- rast(here("data", "lsdtt", fdr, "ksn_tag_zm_near2228.tif")) %>%
+    project(crs_nepal$input, threads = TRUE)
+  # %>% crop(ksn_bnd, mask = TRUE)
+  ggplot() +
+    gg(data = log(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  ggsave("ksn_tag_near.pdf", width = tw, height = tw / 2)
+  
+  ksn_tag_ <- merge(ksn_tag_zm_near$cop30dem_channel_tagged_pixels, ksn_tag_$cop30dem_channel_tagged_pixels)
+  ggplot() +
+    gg(data = log(ksn_tag_$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  ggsave("ksn_tag_merged.pdf", width = tw, height = tw / 2)
+  
+  
+  ksn_tag_near <- interpNear(ksn_tag_, as.points(ksn_tag_),
+                             interpolate = FALSE, # from a geoscience perspective, it is better to use FALSE
+                             radius = 4, # circle seems good enough
+                             field = "cop30dem_channel_tagged_pixels"
+                             # threads = FALSE # when interpolate = TRUE no way to control threads
+  )
+  ggplot() +
+    gg(data = log(ksn_tag_near$cop30dem_channel_tagged_pixels)) +
+    scale_fill_viridis_c(na.value = "transparent")
+  ggsave("ksn_tag_near.pdf", width = tw, height = tw / 2)
+  writeRaster(ksn_tag_near$cop30dem_channel_tagged_pixels, here("data", "ksn_tag_near.tif"), overwrite = TRUE)
+}
+
+# farridge < 0 ------------------------------------------------------------
+
+
+
+
+if (FALSE) {
+  rf2fr_zero <- rf2fr %>% filter(cop30dem_RELIEFTOFARRIDGE < 1e-10)
+  rf2fr_zero$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  rf2fr_zero_zm <- crop(rf2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  fd2fr_zero <- fd2fr %>% filter(cop30dem_FDTOFARRIDGE < .1)
+  fd2fr_zero$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  fd2fr_zero_zm <- crop(fd2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  fd2fr$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  fd2fr_zm <- crop(fd2fr_zero, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  ggplot() +
+    geom_spatraster_rgb(data = tile, alpha = 0.5) +
+    gg(
+      data = mchi_sf_zm, color = "red",
+      # geom = "tile",
+      # alpha = .5,
+      size = 0.1
+    ) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_spatraster(data = fd2fr_zero_zm$cop30dem_FDTOFARRIDGE, maxcell = 5e+07) +
+    scale_fill_continuous(na.value = "transparent") +
+    ggspatial::annotation_scale(location = "br") +
+    ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/fd2fr_zero_zm.pdf"), width = tw, height = tw / 2)
 }

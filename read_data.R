@@ -83,6 +83,16 @@
 
 # set global var ----------------------------------------------------------
 
+if(CV_chess){
+  if (train == "white") {
+    test <- "black"
+  }
+  if(train == "black") {
+    test <- "white"
+  }
+  
+}
+
 to_plot <- TRUE
 ncore <- 10
 x_bin <- 500 # TODO increase to 1000
@@ -104,17 +114,9 @@ if (CV_chess) {
   # [1] 10390
   # > nrow(landslides_c_test)
   # [1] 10081
-  cv_chess_resol <- c(10, 10)
-
-  nm_chess <- paste0("_chess", cv_chess_resol[1])
+  nm_chess <- paste0("_", train, "_", cv_chess_resol[1])
 } else {
   nm_chess <- ""
-}
-
-if (FALSE) {
-  # cv_thin_resol <- c(5, 5)
-  # cv_thin_resol <- c(20,20)
-  # cv_thin_resol <- c(30,30)
 }
 
 # Library -----------------------------------------------------------------
@@ -270,6 +272,11 @@ pga_mean_raster <-
 #   )) %>%
 #   project(crs_nepal$input) %>%
 #   crop(bnd_out, mask = TRUE)
+ggplot() + geom_spatraster(data = pga_std_raster) +
+  geom_sf(data = bnd, fill = NA, col = "red") +
+  scale_fill_viridis_c(option = "D") +
+  ggtitle("PGA std")
+ggsave("figures/pga_std.png", width = tw, height = tw / 2)
 
 # revert back to original scale
 pga_mean_raster$pga_mean_exp <- exp(pga_mean_raster$pga_mean)
@@ -475,44 +482,44 @@ if (FALSE) {
 #   st_intersection(bnd_out)
 # }
 
-nepal_geo %<-% {
+geology %<-% {
   st_read(here("data", "nepal_geo_fill_.shp")) %>%
     st_transform(crs = crs_nepal) %>%
     st_intersection(bnd_out)
 }
 
-# nepal_geo_gangetic <- nepal_geo[nepal_geo$ROCK_TYPES == "Gangetic Plain",]
+# geology_gangetic <- geology[geology$ROCK_TYPES == "Gangetic Plain",]
 #
-# ggplot() + geom_sf(data = nepal_geo_gangetic, aes(fill = ROCK_TYPES)) + geom_sf(data = bnd_out_, fill = NA, col = "red")
+# ggplot() + geom_sf(data = geology_gangetic, aes(fill = ROCK_TYPES)) + geom_sf(data = bnd_out_, fill = NA, col = "red")
 #
-# bnd_out_ <- st_difference(bnd_out, nepal_geo_gangetic)
+# bnd_out_ <- st_difference(bnd_out, geology_gangetic)
 
 
 # Geology without landslides
-nepal_geo$landslides_count <- lengths(st_intersects(nepal_geo, landslides_c))
-# nepal_geo$ROCK_TYPES_ <-  nepal_geo$ROCK_TYPES %in% c("Bhimphedi Group",
+geology$landslides_count <- lengths(st_intersects(geology, landslides_c))
+# geology$ROCK_TYPES_ <-  geology$ROCK_TYPES %in% c("Bhimphedi Group",
 #                                                       "Gangetic Plain",
 #                                                       "Precambrian Igneous Rocks",
 #                                                       "Sub Himalaya")
 
-nepal_geo_df <- as.data.frame(nepal_geo) %>%
+geology_df <- as.data.frame(geology) %>%
   group_by(ROCK_TYPES) %>%
   summarise(
     total_count = sum(landslides_count),
     .groups = "drop"
   )
 # ROCK_TYPES with landslides
-nepal_geo_ref <- nepal_geo_df %>%
+geology_ref <- geology_df %>%
   filter(total_count != 0) %>%
   pull(ROCK_TYPES)
 
-nepal_geo$ROCK_TYPES_ref <- ifelse(nepal_geo$ROCK_TYPES %in% nepal_geo_ref,
+geology$ROCK_TYPES_ref <- ifelse(geology$ROCK_TYPES %in% geology_ref,
   0, 1
 )
 
-nepal_geo$ROCK_TYPES <- as.factor(nepal_geo$ROCK_TYPES)
+geology$ROCK_TYPES <- as.factor(geology$ROCK_TYPES)
 
-nepal_geo <- nepal_geo %>%
+geology <- geology %>%
   #   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Bhimphedi Group", "Nawakot Group")) %>%
   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Gangetic Plain", "Siwalik Group"))
 #   mutate(ROCK_TYPES = stringr::str_replace(ROCK_TYPES, "Precambrian Igneous Rocks", "Kuncha Group")) %>%
@@ -521,20 +528,20 @@ nepal_geo <- nepal_geo %>%
 
 # chr rather than factor, so that we can keep the name instead of showing ID in the summary
 # relevel to make certain level as baseline if the hyperparameter is fixed
-# nepal_geo$ROCK_TYPES <- relevel(as.factor(nepal_geo$ROCK_TYPES),
+# geology$ROCK_TYPES <- relevel(as.factor(geology$ROCK_TYPES),
 #                                 ref = "Higher Himalaya Crystallines")
 
 # nepal_geof <- system.file("data/Nep_Geo/Geology/Nep_geology.shp",
 #                           package="terra") # doesnt work for some reasons
 
 
-# nepal_geo_rast <- rasterize(
-#   vect(nepal_geo),
-#   rast(vect(nepal_geo), ncols = 10000, nrows = 20000),
+# geology_rast <- rasterize(
+#   vect(geology),
+#   rast(vect(geology), ncols = 10000, nrows = 20000),
 #   "ROCK_TYPES"
 # )
 # source("nepal_geo_rast_fill.R")
-# nepal_geo_rast_fill <-
+# geology_rast_fill <-
 #   rast(here("data", "nepal_geo_rast_fill.tif")) %>%
 #                               project(crs_nepal$input) %>%
 #                               crop(bnd_out, mask = TRUE)
@@ -559,7 +566,7 @@ nepal_geo <- nepal_geo %>%
 
 
 system.time({
-  nepal_lattice_sfc %<-% {
+  nepal_lattice_sfc <- {
     hexagon_lattice(
       bnd = bnd, x_bin = x_bin,
       edge_len_n = edge_len_n
@@ -572,7 +579,7 @@ plan(sequential)
 
 plan(multicore, workers = ncore)
 
-system.time({
+# system.time({
   mesh_fm <- fm_mesh_2d_inla(
     loc = nepal_lattice_sfc$lattice,
     boundary = fm_extensions(bnd, c(
@@ -594,7 +601,7 @@ system.time({
     cutoff = 0.9 * nepal_lattice_sfc$edge_len, # Filter away adjacent points to avoid Q matrix not positive definite because the boundary resolution is too high
     crs = fm_crs(bnd)
   ) # Offset for extra boundaries, if needed.
-})
+# })
 
 # subdivide mesh taking n=2 too much RAM, n=1 does not improve anything
 # mesh_fm <- fm_subdivide(mesh_fm, 1)

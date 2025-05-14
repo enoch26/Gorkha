@@ -1,4 +1,4 @@
-fmlb <- logarea_m2 ~ Intercept + log_pga_mean_raster_rw2 + landcover_ + nepal_geo_ + rf2ch
+fmlb <- logarea_m2 ~ Intercept + log_pga_mean_raster_rw2 + landcover_ + geology_ + rf2ch
 # sqrt_ksn_tag
 likb <- {
   bru_obs(

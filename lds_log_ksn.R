@@ -37,10 +37,20 @@ nrow(landslides_c_glacier)
 
 bnd_zm <- st_intersection(bnd, basin_zm_sf)
 
-tile <- maptiles::get_tiles(st_as_sfc(bnd), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
+# tile <- maptiles::get_tiles(st_as_sfc(bnd_out), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
+tile <- maptiles::get_tiles(st_as_sfc(bnd_out), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
 
-ggplot() + geom_spatraster_rgb(data = tile) + gg(data = bnd_out, col = "red", fill= "transparent")
-ggsave("figures/tile.pdf", width = tw, height = tw/2)
+ggplot() + geom_spatraster_rgb(data = tile) + 
+  geom_sf(data = landslides, col = "red",  size = 0.00005, aes(alpha = log(Area_m2))) +
+  gg(data = bnd, col = "red", fill= "transparent") + guides(alpha = "none")
+ggsave("figures/tile_ldsize.pdf", width = tw/2, height = tw/4)
+ggsave("figures/tile_ldsize.png", width = tw/2, height = tw/4, dpi = 150)
+
+ggplot() + geom_spatraster_rgb(data = tile) + 
+  geom_sf(data = landslides_c, col = "red",  size = 0.00005) +
+  gg(data = bnd, col = "red", fill= "transparent") + guides(alpha = "none")
+ggsave("figures/tile_lds.pdf", width = tw/2, height = tw/4)
+ggsave("figures/tile_lds.png", width = tw/2, height = tw/4, dpi = 100)
 
 ggplot() + gg(data = log_ksn_tag_ori) + gg(data = landslides_c_glacier, col = "red", size = 0.01) + scale_fill_viridis_c(na.value = "transparent") 
 ggsave("figures/landslides_c_glacier.pdf", width = tw, height = tw/2)

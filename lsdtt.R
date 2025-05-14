@@ -11,7 +11,7 @@ library(tidyterra)
 library(future)
 
 # https://cran.r-project.org/web/packages/gdalraster/vignettes/gdal-config-quick-ref.html
-gdalraster::set_config_option("GDAL_NUM_THREADS", "10") # somehow this works for interpNear with interpolate = FALSE
+# gdalraster::set_config_option("GDAL_NUM_THREADS", "10") # somehow this works for interpNear with interpolate = FALSE
 # setGDALconfig("GDAL_NUM_THREADS", value = 10) # this does not work
 
 

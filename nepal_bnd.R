@@ -49,20 +49,20 @@ nepal_bnd %<-% {
 
 # remove the unrelated geological region
 # if(FALSE){
-nepal_geo %<-% {
+geology %<-% {
   st_read(here("data", "nepal_geo_fill_.shp")) %>%
     st_transform(crs = crs_nepal)
   # st_intersection(bnd_out)
 }
 
-nepal_geo_ <- nepal_geo[(nepal_geo$ROCK_TYPES %in% c("Siwalik Group", "Gangetic Plain", "Sub Himalaya")), ]
+geology_ <- geology[(geology$ROCK_TYPES %in% c("Siwalik Group", "Gangetic Plain", "Sub Himalaya")), ]
 nepal_bnd <- st_cast(
-  st_difference(nepal_bnd, st_union(nepal_geo_$geometry)),
+  st_difference(nepal_bnd, st_union(geology_$geometry)),
   "POLYGON"
 )
 
 # plot(nepal_bnd)
-# plot(st_geometry(st_union(nepal_geo_)), add = TRUE)
+# plot(st_geometry(st_union(geology_)), add = TRUE)
 # }
 
 
@@ -126,6 +126,57 @@ sqrt_ksn_tag <- sqrt(ksn_tag$cop30dem_channel_tagged_pixels)
 # rm(ksn_tag)
 
 landslides_c$log_ksn <- extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE)
+
+if(FALSE){
+  landslides_c$log_ksn <- unlist(extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE))
+  landslides_c$fd2ch <- unlist(extract(fd2ch$fd2ch_km, vect(st_geometry(landslides_c)), ID = FALSE))
+  landslides_c$rf2ch <- unlist(extract(rf2ch$rf2ch_km, vect(st_geometry(landslides_c)), ID = FALSE))
+  landslides_c <- st_intersection(landslides_c, landcover["CODE1"])
+  landslides_c <- st_intersection(landslides_c, geology["ROCK_TYPES"])
+  landslides_c$CODE1 <- factor(landslides_c$CODE1)
+  
+  library(viridis)
+  # ggplot(landslides_c, aes(x=rf2ch, y=Area_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
+  #    scale_color_viridis(values = sc, option = "D") + facet_wrap(~ CODE1, scales="free_y")
+  # ggsave("landslides_ksn_area.pdf", width = tw, height = tw)
+  
+  pwr <- .5
+  sc <- scales::rescale(seq(0,1,length.out = 50)^pwr)
+  col_opt <- "H"
+  landslides_c_ <- landslides_c[!is.na(landslides_c$CODE1),]
+  
+
+  
+  ggplot(landslides_c_, aes(x=log_ksn, y=logarea_m2)) + geom_point(aes(col=rf2ch), size =0.0001, alpha = 0.7) +
+     scale_color_viridis(values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
+  ggsave("landslides_ksn_logarea_fdcol_landcover.pdf", width = tw, height = tw)
+  
+  ggplot(landslides_c_, aes(x=fd2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
+    scale_color_viridis(values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
+  ggsave("landslides_ksn_logarea_fd_landcover.pdf", width = tw, height = tw)
+  
+  ggplot(landslides_c_, aes(x=rf2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
+    scale_color_viridis(values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
+  ggsave("landslides_ksn_logarea_rf_landcover.pdf", width = tw, height = tw)
+  
+  ggplot(landslides_c_, aes(x=fd2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
+     scale_color_viridis(option = "D") + facet_wrap(~ ROCK_TYPES, scales="free_y")
+  ggsave("landslides_ksn_logarea_fd_geology.pdf", width = tw, height = tw)
+  
+
+  
+  ggplot(landslides_c_, aes(x=rf2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
+     scale_color_viridis(option = "D") + facet_wrap(~ ROCK_TYPES, scales="free_y")
+  ggsave("landslides_ksn_logarea_rf_geology.pdf", width = tw, height = tw)
+
+  ggplot(landslides_c_, aes(x=fd2ch, y=logarea_m2)) + 
+    geom_point(aes(col=CODE1, shape=CODE1), size =0.0001, alpha = 0.5) +
+    scale_shape_manual(values=1:nlevels(landslides_c_$CODE1))
+    # theme_bw()
+  ggsave("landslides_ksn_LC.pdf")
+  
+}
+
 # TODO find crown pt with flow direction
 if (glacier_remove) {
   landslides_c <- (landslides_c[landslides_c$log_ksn >= 1.99, ])
@@ -140,24 +191,18 @@ if (glacier_remove) {
 # TODO CV_thin: half the landslides pts, model the same, predict the same, compute the score with newdata$count
 # TODO CV_chess: cv_partition the domain, model with test landslides pts data over the entire domain, predict the
 
-# TODO split data for model and test data, turn it back to df and then to sf to avoid the error
-# Error : [] nrow dataframe does not match nrow geometry
-# In addition: Warning messages:
-#   1: In base::library(pkg, character.only = TRUE) :
-#   package ‘inlabru’ already present in search()
-# 2: [SpatVector from sf] not all geometries were transferred, use svc for a geometry collection
-# Error: [as,sf] coercion failed. You can try coercing via a Spatial* (sp) class
+# Swap the train and test set into thinA and thinB subfolders
 if (CV_thin) {
-  if (file.exists(here("data", "landslides_thin_train.shp"))) {
-    landslides_c <- st_read(here("data", "landslides_thin_train.shp"))
-    landslides_c_test <- st_read(here("data", "landslides_thin_test.shp"))
+  if (file.exists(here("data", trainset, "landslides_thin_train.shp"))) {
+    landslides_c <- st_read(here("data", trainset, "landslides_thin_train.shp"))
+    landslides_c_test <- st_read(here("data", trainset, "landslides_thin_test.shp"))
   } else {
     test_idx <- sample(1:nrow(landslides_c), 0.5 * nrow(landslides_c))
     landslides_c_test <- landslides_c[test_idx, ]
     landslides_c <- landslides_c[-test_idx, ]
     rownames(landslides_c) <- rownames(landslides_c_test) <- NULL
-  st_write(landslides_c, here("data", "landslides_thin_train.shp"))
-  st_write(landslides_c_test, here("data", "landslides_thin_test.shp"))
+  st_write(landslides_c, here("data", trainset, "landslides_thin_train.shp"))
+  st_write(landslides_c_test, here("data", trainset, "landslides_thin_test.shp"))
   }
     
 
@@ -169,9 +214,9 @@ if (CV_thin) {
     resolution = cv_chess_resol
   )
 if(to_plot){
-    ggplot() + gg(data = cv_grid$white, fill = "white") + gg(data = cv_grid$black, fill = "black") +
+    ggplot() + gg(data = cv_grid[[train]], fill = train) + gg(data = cv_grid[[test]], fill = test) +
     geom_sf(data = bnd, col = "red", fill = "NA")
-    ggsave(here("figures", "cv_chess_grid.pdf"))
+    ggsave(here("figures", paste0("cv_chess_",train, ".pdf")))
   
 }
   # ggplot() +  + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
@@ -180,18 +225,18 @@ if(to_plot){
     landslides_c <- st_read(here("data",paste0("landslides_chess", nm_chess ,"_train.shp")))
     landslides_c_test <- st_read(here("data", paste0("landslides_chess", nm_chess, "_test.shp")))
     
-    cv_grid$white$count <- lengths(st_intersects(cv_grid$white, landslides_c))
-    cv_grid$black$count_test <- lengths(st_intersects(cv_grid$black, landslides_c_test))
+    cv_grid[[train]]$count <- lengths(st_intersects(cv_grid[[train]], landslides_c))
+    cv_grid[[test]]$count_test <- lengths(st_intersects(cv_grid[[test]], landslides_c_test))
   } else {
-    landslides_c_test <- st_intersection(landslides_c, cv_grid$black)
-    # pxl_black <- st_intersection(pxl, cv_grid$black)
+    landslides_c_test <- st_intersection(landslides_c, cv_grid[[test]])
+    # pxl_black <- st_intersection(pxl, cv_grid[[test]])
 
     # ggplot() + geom_sf(data = pxl_black, size = .01)
     # ggsave("figures/pxl_black.pdf")
-    landslides_c <- st_intersection(landslides_c, cv_grid$white)
+    landslides_c <- st_intersection(landslides_c, cv_grid[[train]])
   
-    cv_grid$white$count <- lengths(st_intersects(cv_grid$white, landslides_c))
-    cv_grid$black$count_test <- lengths(st_intersects(cv_grid$black, landslides_c_test))
+    cv_grid[[train]]$count <- lengths(st_intersects(cv_grid[[train]], landslides_c))
+    cv_grid[[test]]$count_test <- lengths(st_intersects(cv_grid[[test]], landslides_c_test))
     
   st_write(landslides_c, here("data", paste0("landslides_chess", nm_chess ,"_train.shp")))
   st_write(landslides_c_test, here("data", paste0("landslides_chess", nm_chess, "_test.shp")))

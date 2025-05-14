@@ -193,16 +193,16 @@ sf2sr <- function(x, y, field = "mean", fun = "mean", ...){
 # set seed issue: https://github.com/inlabru-org/inlabru/issues/88
 # now only work for Gaussian (and Poisson, because Poisson we can turn in Gaussian)
 score <- function(object,
-                      newdata = NULL,
-                      # mesh,
-                      cv_grid = NULL,
-                      formula = NULL,
-                      n.samples = 1000,
-                      obs = "count",
-                      inla.link = NULL,
-                      seed = NULL,
-                      plot = FALSE,
-                      ...) {
+                  newdata = NULL,
+                  # mesh,
+                  cv_grid = NULL,
+                  formula = NULL,
+                  n.samples = 1000,
+                  obs = "count",
+                  inla.link = NULL,
+                  seed = NULL,
+                  plot = FALSE,
+                  ...) {
   # old_seed <- .Random.seed
   # on.exit(expr = {
   #   .Random.seed <- old_seed
@@ -210,22 +210,20 @@ score <- function(object,
   # if the second one is not provided, generate the second seed for reproducibility.
   # check the vector of seed len 2
   
-
-
   if (length(seed) > 2) {
     stop("At most two seeds should be provided")
   }
-
+  
   if (length(seed) >= 1) {
     set.seed(seed[1])
   }
-
+  
   if (length(seed) >= 2) {
     seed2 <- seed[2]
   } else {
     seed2 <- as.integer(runif(1) * .Machine$integer.max) # this is how INLA set seed
   }
-
+  
   # TODO check multiple likelihood here
   # ask user which likelihood to pick
   # https://stackoverflow.com/questions/11007178/creating-a-prompt-answer-system-to-input-data-into-r
@@ -244,7 +242,7 @@ score <- function(object,
       ))
     }
   }
-
+  
   # Use the above seed to reproduce the same result and into the predict call
   if(FALSE){
     if (is.null(formula)) {
@@ -257,11 +255,11 @@ score <- function(object,
           "(", labels(terms(formula)), ", inverse = TRUE)"
         ))
       }
-  }
+    }
     
-
+    
   }
-
+  
   #################################################################
   fml <- object$bru_info$lhoods[[1]]$formula
   ff <- deparse(fml[[3]], width.cutoff = 150L)
@@ -281,8 +279,8 @@ score <- function(object,
     formula <- as.formula(paste(
       paste0(" ~ { expect <-  ", ff),
       "\n",
-    "variance <- 1/exp(Precision_for_the_Gaussian_observations) ",
-    "\n",
+      "variance <- 1/Precision_for_the_Gaussian_observations",
+      "\n",
       paste0(
         "list(expect = expect, obs_prob = dnorm(", get(obs, newdata),
         ", mean = expect, sd = sqrt(variance)))}"
@@ -311,74 +309,74 @@ score <- function(object,
     
     
     # pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_median)
-    pred$obs_prob$SE <- AE <- abs(get(obs, newdata) - post_E)
+    pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_E)
     pred$obs_prob$SE <- SE <- (get(obs, newdata) - post_E)^2
     pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
     # TODO log score
     pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
-    # pred$obs_prob$LS_upper <- LS_upper <- -log(pred$obs_prob$mean + 2*pred$obs_prob$mean.mc_std_err)
-    # pred$obs_prob$LS_lower <- LS_lower <- -log(pred$obs_prob$mean - 2*pred$obs_prob$mean.mc_std_err)
+    pred$obs_prob$LS_upper <- LS_upper <- -log(pred$obs_prob$mean - 2*pred$obs_prob$mean.mc_std_err)
+    pred$obs_prob$LS_lower <- LS_lower <- -log(pred$obs_prob$mean + 2*pred$obs_prob$mean.mc_std_err)
   }else{
     # Poisson point pattern
-  agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
-  formula <- as.formula(paste(
-    paste0(" ~ { expect <- ibm_eval(agg_nc, input = list(
+    agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
+    formula <- as.formula(paste(
+      paste0(" ~ { expect <- ibm_eval(agg_nc, input = list(
                                         block = .block,
                                         weights = weight
                                       ),
                                       state = ", ff, ", log = FALSE)"),
-    "\n",
-    # "y <- ", obs,
-    # "\n",
-    paste0(
-      # "list(expect = expect)}"
-      "list(expect = expect, obs_prob = dpois(", get(obs, cv_grid), ", lambda = expect))}"
-      # "list(expect = expect, obs_prob = dpois(", obs , "lambda = expect))}"
+      "\n",
+      # "y <- ", obs,
+      # "\n",
+      paste0(
+        # "list(expect = expect)}"
+        "list(expect = expect, obs_prob = dpois(", get(obs, cv_grid), ", lambda = expect))}"
+        # "list(expect = expect, obs_prob = dpois(", obs , "lambda = expect))}"
+      )
     )
-  )
-  )
-  
-  # pred <- predict(fit1a,
-  #   newdata = cv_newdata, formula = formula_,
-  #   n.samples = 5
-  # )
-  pred <- predict(object,
-    newdata = newdata, formula = formula,
-    n.samples = n.samples,
-    seed = seed2,
-    ...
-  )
-  
-  post_E <- get("mean", pred$expect)
-  # post_median <- get("median", pred$expect)
-  post_Var <- post_E + (get("sd", pred$expect))^2
-  
-  # pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_median)
-  pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_E)
-  pred$obs_prob$SE <- SE <- (get(obs, cv_grid) - post_E)^2
-
-  
-  pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
-  # log score
-  # pred$obs_prob$LS <- LS <- -log(dpois(get(obs, cv_grid), lambda = post_E))
-  pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
-  # pred$obs_prob$LS_upper <- LS_upper <- -log(pred$obs_prob$mean + 2 * pred$obs_prob$mean.mc_std_err)
-  # pred$obs_prob$LS_lower <- LS_lower <- -log(pred$obs_prob$mean - 2 * pred$obs_prob$mean.mc_std_err)
-  
+    )
+    
+    # pred <- predict(fit1a,
+    #   newdata = cv_newdata, formula = formula_,
+    #   n.samples = 5
+    # )
+    pred <- predict(object,
+                    newdata = newdata, formula = formula,
+                    n.samples = n.samples,
+                    seed = seed2,
+                    ...
+    )
+    
+    post_E <- get("mean", pred$expect)
+    # post_median <- get("median", pred$expect)
+    post_Var <- post_E + (get("sd", pred$expect))^2
+    
+    # pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_median)
+    pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_E)
+    pred$obs_prob$SE <- SE <- (get(obs, cv_grid) - post_E)^2
+    
+    
+    pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
+    # log score
+    # pred$obs_prob$LS <- LS <- -log(dpois(get(obs, cv_grid), lambda = post_E))
+    pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
+    pred$obs_prob$LS_upper <- LS_upper <- -log(pred$obs_prob$mean - qnorm(.975) * pred$obs_prob$mean.mc_std_err)
+    pred$obs_prob$LS_lower <- LS_lower <- -log(pred$obs_prob$mean + qnorm(.975) * pred$obs_prob$mean.mc_std_err)
+    
   }
   AE_mean <- mean(AE, na.rm = TRUE)
   SE_mean <- mean(SE, na.rm = TRUE)
   DS_mean <- mean(DS, na.rm = TRUE)
   LS_mean <- mean(LS, na.rm = TRUE)
-  # LS_mean_upper <- mean(LS_upper, na.rm = TRUE)
-  # LS_mean_lower <- mean(LS_lower, na.rm = TRUE)
+  LS_mean_upper <- LS_mean + qnorm(.975) * sum((pred$obs_prob$mean.mc_std_err/pred$obs_prob$mean)^2, na.rm = TRUE)/length(!is.na(pred$obs_prob$mean.mc_std_err))
+  LS_mean_lower <- LS_mean - qnorm(.975) * sum((pred$obs_prob$mean.mc_std_err/pred$obs_prob$mean)^2, na.rm = TRUE)/length(!is.na(pred$obs_prob$mean.mc_std_err))
   cat(
     "Mean AE score: ", AE_mean, "\n",
     "Mean SE score: ", SE_mean, "\n",
     "Mean DS score: ", DS_mean, "\n",
-    "Mean log score: ", LS_mean, "\n"
-    # "Mean log upper score: ", LS_mean_upper, "\n",
-    # "Mean log lower score: ", LS_mean_lower, "\n"
+    "Mean log score: ", LS_mean, "\n",
+    "Mean log upper score: ", LS_mean_upper, "\n",
+    "Mean log lower score: ", LS_mean_lower, "\n"
   )
   
   # An example of how to plot the SE and DS score
@@ -395,22 +393,22 @@ score <- function(object,
     # print(p1 / p2 + patchwork::plot_layout(guides = "collect"))
   }
   # https://stackoverflow.com/questions/28300713/how-and-when-should-i-use-on-exit
-
+  
   return(list(
     pred = pred,
     mean_score = tibble::tibble(
       AE_mean = AE_mean,
       SE_mean = SE_mean,
       DS_mean = DS_mean,
-      LS_mean = LS_mean
-      # LS_mean_upper = LS_mean_upper,
-      # LS_mean_lower = LS_mean_lower
+      LS_mean = LS_mean,
+      LS_mean_upper = LS_mean_upper,
+      LS_mean_lower = LS_mean_lower
     )
     # score = tibble::tibble(SE = SE, DS = DS)
     # cbind for user
     # plot = list(p1,p2)
   ))
-
+  
 }
 
 
@@ -846,7 +844,7 @@ cv_chess <- function(object,
                                       weights = weight
                                     ),
                                     state = ", ff, ", log = FALSE)"))
-  cv_newdata <- fm_int(mesh, cv_grid$black)
+  cv_newdata <- fm_int(mesh, cv_grid[[test]])
   
   reorder <- order(cv_newdata$.block)
   cv_newdata <- cv_newdata[reorder, , drop  = FALSE]
@@ -903,7 +901,31 @@ fml_lambda <- function(fml) {
   as.formula(paste0(
     " ~ list(", "lambda = exp(", ff, ")",
     # ",", "log_lambda = ", ff,
-    paste(",", tt1, "=", tt, collapse = ""), ")"
+    paste(",", tt1, "=", tt, collapse = ""),")"
+    # paste(",", paste0("exp_", tt1), "= exp(", tt, ")", collapse = ""), ")"
+  ))
+}
+
+fml_lambda_ <- function(fml) {
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  tt <- labels(terms(fml))
+  if (any(stringr::str_detect(tt, "exp"))) {
+    tt1 <- tt
+    tt1[stringr::str_detect(tt1, "exp")] <- "exp_diff"
+  } else {
+    tt1 <- tt
+  }
+  # if (any(stringr::str_detect(tt, "beta"))) {
+  #   tt1 <- tt
+  #   tt1[stringr::str_detect(tt1, "beta")] <- ""
+  # } else {
+  #   tt1 <- tt
+  # }
+  as.formula(paste0(
+    " ~ list(", "lambda = exp(", ff, ")",
+    # ",", "log_lambda = ", ff,
+    # paste(",", tt1, "=", tt, collapse = ""),")"
+    paste(",", paste0(tt1), "= exp(", tt, ")", collapse = ""), ")"
   ))
 }
 
@@ -917,6 +939,19 @@ fml_mu <- function(fml) {
     tt1 <- tt
   }
   as.formula(paste0(" ~ list(", "mu = ", ff, paste(",", tt1, "=", tt, collapse = ""), ")"))
+}
+
+fml_mu_ <- function(fml) {
+  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  tt <- labels(terms(fml))
+  if (any(stringr::str_detect(tt, "exp"))) {
+    tt1 <- tt
+    tt1[stringr::str_detect(tt1, "exp")] <- "exp_diff"
+  } else {
+    tt1 <- tt
+  }
+  as.formula(paste0(" ~ list(", "mu = ", ff, 
+                    paste(",", paste0(tt1), "= exp(", tt, ")", collapse = ""), ")"))
 }
 
 # textbox
@@ -984,28 +1019,7 @@ p_textbox <- function(text) {
     
     if(is.null(cv_grid)){
         break()
-      # formula <- as.formula(paste(
-      #   paste0(" ~ { expect <-  ", ff),
-      #   "\n",
-      #   "variance <- 1/exp(Precision_for_the_Gaussian_observations) ",
-      #   "\n",
-      #   paste0(
-      #     "pnorm(kk, mean = rep(expect, each = length(k)), sd = rep(sqrt(variance), each = length(k)))}"
-      #   )
-      # )
-      # )
-      # 
-      # pred <- predict(object,
-      #                 newdata = newdata, formula = formula,
-      #                 n.samples = n.samples,
-      #                 seed = seed2,
-      #                 ...
       } else{
-
-        # cv_newdata <- fm_int(newdata, cv_grid)
-        # reorder <- order(cv_newdata$.block)
-        # cv_newdata <- cv_newdata[reorder, , drop  = FALSE]
-        
         agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
         formula <- as.formula(paste(
           paste0(" ~ { expect <- ibm_eval(agg_nc, input = list(
@@ -1034,7 +1048,7 @@ p_textbox <- function(text) {
     )
     # Check that the cutoff point K has nearly probability mass 1 below it,
     # for all i:
-    min(results %>% dplyr::filter(k == max_K) %>% pull(Fpred))
+    print(paste0("Check that the cutoff point K has nearly probability mass 1 below it:", min(results %>% dplyr::filter(k == max_K) %>% pull(Fpred))))
     
     crps_scores <-
       (results %>%
@@ -1043,4 +1057,103 @@ p_textbox <- function(text) {
          pull(crps))
     return(crps_scores)
   }
+  
+  
+
+# CRPS_ -------------------------------------------------------------------
+
+  crps_ <- function(object, newdata, obs, cv_grid = NULL, n.samples = 1000, seed = NULL,...){
+    if (length(seed) > 2) {
+      stop("At most two seeds should be provided")
+    }
+    
+    if (length(seed) >= 1) {
+      set.seed(seed[1])
+    }
+    
+    if (length(seed) >= 2) {
+      seed2 <- seed[2]
+    } else {
+      seed2 <- as.integer(runif(1) * .Machine$integer.max) # this is how INLA set seed
+    }
+    
+    if(is.null(cv_grid)){
+      obs_data <- get(obs, newdata)
+    } else{
+      obs_data <- get(obs, cv_grid)
+    }
+    
+    max_K <- 100 # some large value, so that 1-F(K) is small
+    fml <- object$bru_info$lhoods[[1]]$formula
+    ff <- deparse(fml[[3]], width.cutoff = 150L)
+    
+    if(is.null(cv_grid)){pred_norm <- 
+      predict(object, newdata,
+              formula = as.formula(paste( "~ {",
+                                          paste0("mu <- ", ff),
+                                          "\n",
+                                          paste0("variance <- 1/Precision_for_the_Gaussian_observations"),
+                                          "\n",
+                                          paste0("list(
+                           crps = scoringRules::crps_norm(obs_data, mu),
+                           F = do.call(
+                             c,
+                             lapply(
+                               seq_along(obs_data),
+                               function(i) {
+                                 pnorm(seq(0, max_K), mean = mu[i], sd = sqrt(variance[i]))
+                               }
+                             )
+                           )
+                         )
+                       }"))),
+                                              n.samples = n.samples,
+                                              seed = seed2, ...
+    )
+    crps_score <-
+      pred_norm$crps$mean -
+      (pred_norm$F %>%
+         mutate(i = rep(seq_along(obs_data), each = max_K + 1)) %>%
+         group_by(i) %>%
+         summarise(F_var = sum(sd^2), .groups = "drop") %>%
+         pull(F_var))
+    
+    } else{
+      agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
+      pred_pois <- predict(object, newdata,
+                            formula = as.formula(paste(
+                              paste0(" ~ {lambda <- ibm_eval(agg_nc, input = list(
+                                        block = .block,
+                                        weights = weight
+                                      ),
+                                      state = ", ff, ", log = FALSE)"),
+                              "\n",
+                              paste0("list(
+                           crps = scoringRules::crps_pois(obs_data, lambda),
+                           F = do.call(
+                             c,
+                             lapply(
+                               seq_along(obs_data),
+                               function(i) {
+                                 ppois(seq(0, max_K), lambda = lambda[i])
+                               }
+                             )
+                           )
+                         )}"))
+                            ),
+                            n.samples = n.samples,
+                            seed = seed2, ...
+      )
+      
+      crps_score <-
+        pred_pois$crps$mean -
+        (pred_pois$F %>%
+           mutate(i = rep(seq_along(obs_data), each = max_K + 1)) %>%
+           group_by(i) %>%
+           summarise(F_var = sum(sd^2), .groups = "drop") %>%
+           pull(F_var))
+    }
+    return(crps_score)
+  }
+  
   

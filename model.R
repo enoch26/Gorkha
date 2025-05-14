@@ -11,10 +11,10 @@ library(future)
 # TODO INLA 1D mesh with RW2
 # https://github.com/inlabru-org/inlabru/discussions/155
 # https://groups.google.com/g/r-inla-discussion-group/c/CiA4l9zhCMw
-min_ksn_tag <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[1]
-max_ksn_tag <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[2]
-knots <- seq(0, max_ksn_tag, length = 25)
-mesh_ksn <- fm_mesh_1d(knots, interval = c(0, max_ksn_tag), degree = 2, boundary = "free")
+min_log_ksn_tag_rw2 <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[1]
+max_log_ksn_tag_rw2 <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[2]
+knots <- seq(0, max_log_ksn_tag_rw2, length = 25)
+mesh_ksn <- fm_mesh_1d(knots, interval = c(0, max_log_ksn_tag_rw2), degree = 2, boundary = "free")
 ksn_tag_mapper <- bru_mapper(mesh_ksn, indexed = TRUE)
 
 min_sqrt_ksn_tag <- minmax(sqrt_ksn_tag$cop30dem_channel_tagged_pixels)[1]
@@ -28,6 +28,12 @@ max_rf2ch <- minmax(rf2ch$rf2ch_km)[2]
 knots <- seq(min_rf2ch, max_rf2ch, length = 25)
 mesh_rf2ch <- fm_mesh_1d(knots, interval = c(0, max_rf2ch), degree = 2, boundary = "free")
 rf2ch_mapper <- bru_mapper(mesh_rf2ch, indexed = TRUE)
+
+min_fd2ch <- minmax(fd2ch$fd2ch_km)[1]
+max_fd2ch <- minmax(fd2ch$fd2ch_km)[2]
+knots <- seq(min_fd2ch, max_fd2ch, length = 25)
+mesh_fd2ch <- fm_mesh_1d(knots, interval = c(0, max_fd2ch), degree = 2, boundary = "free")
+fd2ch_mapper <- bru_mapper(mesh_fd2ch, indexed = TRUE)
 
 min_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean_exp"])[1]
 max_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean_exp"])[2]
@@ -72,29 +78,29 @@ hyper_iid <- list(theta1 = list(prior = "pcprec", param = c(0.1, 0.5)))
 # Notes: Finn fix bru_fill_missing for integration points
 #
 # bru_fill_missing(
-#   nepal_geo["ROCK_TYPES"],
+#   geology["ROCK_TYPES"],
 #   ips[1:10,],
-#   eval_spatial(nepal_geo["ROCK_TYPES"], ips[1:10,])
+#   eval_spatial(geology["ROCK_TYPES"], ips[1:10,])
 # )
 
-#   nepal_geo_ref(bru_fill_missing(
-#     nepal_geo["ROCK_types_ref"],
+#   geology_ref(bru_fill_missing(
+#     geology["ROCK_types_ref"],
 #     .data.,
-#     eval_spatial(nepal_geo["ROCK_types_ref"], .data.),
+#     eval_spatial(geology["ROCK_types_ref"], .data.),
 #     model = "linear"
 #   ))
 #
 #
-#   nepal_geo_ref(bru_fill_missing(
-#     nepal_geo["ROCK_TYPES"],
+#   geology_ref(bru_fill_missing(
+#     geology["ROCK_TYPES"],
 #     ips[1:10,],
-#     eval_spatial(nepal_geo["ROCK_TYPES"], ips[1:10,])
+#     eval_spatial(geology["ROCK_TYPES"], ips[1:10,])
 #     ),
 #     model = "linear"
 #   )
 
 # extraconstr arguments for sum-to-zero constraints for the rock types with landslides
-A_geo <- matrix(as.integer(levels(as.factor(nepal_geo$ROCK_TYPES)) %in% nepal_geo_ref), nrow = 1)
+A_geo <- matrix(as.integer(levels(as.factor(geology$ROCK_TYPES)) %in% geology_ref), nrow = 1)
 e_geo <- rep(0, 1)
 A_lu <- matrix(as.integer(levels(as.factor(landcover$CODE1)) %in% landcover_ref), nrow = 1)
 e_lu <- rep(0, 1)
@@ -138,31 +144,31 @@ cmp_ <- ~ Intercept(1) +
     model = "iid", constr = T,
     hyper = hyper_iid
   ) +
-  nepal_geo(
+  geology(
     bru_fill_missing(
-      nepal_geo["ROCK_TYPES"],
+      geology["ROCK_TYPES"],
       .data.,
-      eval_spatial(nepal_geo["ROCK_TYPES"], .data.)
+      eval_spatial(geology["ROCK_TYPES"], .data.)
     ),
     model = "iid", constr = F,
     extraconstr = list(A = A_geo, e = e_geo),
     hyper = hyper_iid
   ) +
-  nepal_geo_(
+  geology_(
     bru_fill_missing(
-      nepal_geo["ROCK_TYPES"],
+      geology["ROCK_TYPES"],
       .data.,
-      eval_spatial(nepal_geo["ROCK_TYPES"], .data.)
+      eval_spatial(geology["ROCK_TYPES"], .data.)
     ),
     model = "iid", constr = T,
     # extraconstr = list(A = A, e = e),
     hyper = hyper_iid
   ) +
-  nepal_geo_ref(
+  geology_ref(
     bru_fill_missing(
-      nepal_geo["ROCK_TYPES_ref"],
+      geology["ROCK_TYPES_ref"],
       .data.,
-      eval_spatial(nepal_geo["ROCK_TYPES_ref"], .data.)
+      eval_spatial(geology["ROCK_TYPES_ref"], .data.)
     ),
     model = "linear", prec.linear = 1e-6
   ) +
@@ -174,8 +180,8 @@ cmp_ <- ~ Intercept(1) +
     ),
     model = "linear", prec.linear = 1e-6
   ) +
-  # log_ksn_tag(log_ksn_tag, model = "linear") +
-  ksn_tag(log_ksn_tag,
+  log_ksn_tag(log_ksn_tag, model = "linear") +
+  log_ksn_tag_rw2(log_ksn_tag,
     model = "rw2",
     mapper = ksn_tag_mapper, scale.model = TRUE, constr = TRUE,
     hyper = hyper_rw
@@ -231,81 +237,81 @@ cmp_ <- ~ Intercept(1) +
 # crv_profile(crv_profile["crv_profile"], model = "linear")
 
 # formula -----------------------------------------------------------------
-fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + nepal_geo + ksn_tag
-fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag
+fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag 
+fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag 
 
-fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + nepal_geo + sqrt_ksn_tag
-fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + nepal_geo_ + sqrt_ksn_tag
+fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + sqrt_ksn_tag
+fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster+ landcover_ + geology_ + sqrt_ksn_tag
 
-# not better than fml1
-# fml2a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + ksn_tag + rf2ch + rf2fr
-# fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag + rf2ch + rf2fr
-# fml2a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + ksn_tag + fd2ch + fd2fr
-# fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag + fd2ch + fd2fr
+fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2
+fml3b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2
 
-fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + nepal_geo + ksn_tag + rf2ch_inv
-fml3b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + nepal_geo_ + rf2ch
+fml4a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + dem
+fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + dem
 
-fml4a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + nepal_geo + ksn_tag + fd2ch_inv
-fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + nepal_geo_ + fd2ch
+fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + rf2ch_inv
+fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster +landcover_ + geology_ + rf2ch
+
+fml6a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + fd2ch_inv
+fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + fd2ch
+
+# Putting everything into a basket is not improving, not better than fml1
+# fml2a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + rf2ch + rf2fr
+# fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + ksn_tag + rf2ch + rf2fr
+# fml2a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + fd2ch + fd2fr
+# fml2b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + ksn_tag + fd2ch + fd2fr
 
 # not as good as rf2ch
-# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + ksn_tag + fd2ch
-# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag + fd2ch
-
-fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + nepal_geo + ksn_tag + dem_inv
-fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + nepal_geo_ + dem_inv 
-
-fml6a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + nepal_geo + dem
-fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + nepal_geo_ + dem
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + fd2ch
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + ksn_tag + fd2ch
 
 # only add extra noises for sheer ksn model, make it worse
-# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + ksn_tag + twi
-# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag + twi
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + twi
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + ksn_tag + twi
 # not better than fml3
-# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + ksn_tag + rf2ch_inv + rf2fr_inv
-# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag + rf2ch_inv + rf2fr_inv
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + rf2ch_inv + rf2fr_inv
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + ksn_tag + rf2ch_inv + rf2fr_inv
 
-# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + ksn_tag + fd2ch_inv + fd2fr_inv
-# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + ksn_tag + fd2ch_inv + fd2fr_inv
+# fml4a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + fd2ch_inv + fd2fr_inv
+# fml4b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + ksn_tag + fd2ch_inv + fd2fr_inv
 
 
-# fml5a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + dem + asp
-# fml5b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + dem + asp
-# fml6a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + asp + crv_planform + crv_profile
-# fml6b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + asp + crv_planform + crv_profile
-# fml7a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + asp + crv_planform + crv_profile
-# fml7b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + asp + crv_planform + crv_profile
-# fml8a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + dem + asp + crv_planform + crv_profile
-# fml8b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + nepal_geo_ + dem + asp +crv_planform + crv_profile
-# fml9a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + slope
-# fml9b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover + nepal_geo + slope
-# fml10a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch + dem
-# fml10b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch + dem
-# fml11a <- geometry ~ Intercept + pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch2 + dem
-# fml11b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch2 + dem
+# fml5a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + dem + asp
+# fml5b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + dem + asp
+# fml6a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + asp + crv_planform + crv_profile
+# fml6b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + asp + crv_planform + crv_profile
+# fml7a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + asp + crv_planform + crv_profile
+# fml7b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + asp + crv_planform + crv_profile
+# fml8a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + dem + asp + crv_planform + crv_profile
+# fml8b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover_ + geology_ + dem + asp +crv_planform + crv_profile
+# fml9a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + slope
+# fml9b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover + geology + slope
+# fml10a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + geology_ref + rf2ch + dem
+# fml10b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover + geology + geology_ref + rf2ch + dem
+# fml11a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + geology_ref + rf2ch2 + dem
+# fml11b <- logarea_m2 ~ Intercept + pga_mean_raster + landcover + geology + geology_ref + rf2ch2 + dem
 
 # without intercept
-# fml2a <- geometry ~ pga_mean_raster + nepal_geo
-# fml2b <- logarea_m2 ~ pga_mean_raster + nepal_geo
-# fml3a <- geometry ~ pga_mean_raster + landcover + nepal_geo
-# fml3b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo
-# fml4a <- geometry ~ pga_mean_raster + landcover + nepal_geo + rf2ch
-# fml4b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + rf2ch
-# fml5a <- geometry ~ pga_mean_raster + landcover + nepal_geo + rf2ch2
-# fml5b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + rf2ch2
-# fml6a <- geometry ~ pga_mean_raster + landcover + nepal_geo + rf2ch + asp
-# fml6b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + rf2ch + asp
-# fml7a <- geometry ~ pga_mean_raster + landcover + nepal_geo + rf2ch2 + asp
-# fml7b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + rf2ch2 + asp
-# fml8a <- geometry ~ pga_mean_raster + landcover + nepal_geo + slope
-# fml8b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + slope
-# fml9a <- geometry ~ pga_mean_raster + landcover + nepal_geo + slope + asp
-# fml9b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + slope + asp
-# fml10a <- geometry ~ pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch + dem
-# fml10b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch + dem
-# fml11a <- geometry ~ pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch2 + dem
-# fml11b <- logarea_m2 ~ pga_mean_raster + landcover + nepal_geo + nepal_geo_ref + rf2ch2 + dem
+# fml2a <- geometry ~ pga_mean_raster + geology
+# fml2b <- logarea_m2 ~ pga_mean_raster + geology
+# fml3a <- geometry ~ pga_mean_raster + landcover + geology
+# fml3b <- logarea_m2 ~ pga_mean_raster + landcover + geology
+# fml4a <- geometry ~ pga_mean_raster + landcover + geology + rf2ch
+# fml4b <- logarea_m2 ~ pga_mean_raster + landcover + geology + rf2ch
+# fml5a <- geometry ~ pga_mean_raster + landcover + geology + rf2ch2
+# fml5b <- logarea_m2 ~ pga_mean_raster + landcover + geology + rf2ch2
+# fml6a <- geometry ~ pga_mean_raster + landcover + geology + rf2ch + asp
+# fml6b <- logarea_m2 ~ pga_mean_raster + landcover + geology + rf2ch + asp
+# fml7a <- geometry ~ pga_mean_raster + landcover + geology + rf2ch2 + asp
+# fml7b <- logarea_m2 ~ pga_mean_raster + landcover + geology + rf2ch2 + asp
+# fml8a <- geometry ~ pga_mean_raster + landcover + geology + slope
+# fml8b <- logarea_m2 ~ pga_mean_raster + landcover + geology + slope
+# fml9a <- geometry ~ pga_mean_raster + landcover + geology + slope + asp
+# fml9b <- logarea_m2 ~ pga_mean_raster + landcover + geology + slope + asp
+# fml10a <- geometry ~ pga_mean_raster + landcover + geology + geology_ref + rf2ch + dem
+# fml10b <- logarea_m2 ~ pga_mean_raster + landcover + geology + geology_ref + rf2ch + dem
+# fml11a <- geometry ~ pga_mean_raster + landcover + geology + geology_ref + rf2ch2 + dem
+# fml11b <- logarea_m2 ~ pga_mean_raster + landcover + geology + geology_ref + rf2ch2 + dem
 
 lik1a %<-% {
   bru_obs(
@@ -540,9 +546,9 @@ if (FALSE) {
 # fit1 --------------------------------------------------------------------
 # https://grantmcdermott.com/ds4e/parallel.html
 
-if (file.exists(here("RDS", paste0("fit1a", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit1a", nm_chess, ".RDS")))) {
   fit1a %<-% {
-    readRDS(here("RDS", paste0("fit1a", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit1a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -555,12 +561,12 @@ if (file.exists(here("RDS", paste0("fit1a", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit1a, file = here("RDS", paste0("fit1a", nm_chess, ".RDS")))
+  saveRDS(fit1a, file = here("RDS", trainset, paste0("fit1a", nm_chess, ".RDS")))
 }
 
-if (file.exists(here("RDS", paste0("fit1b", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit1b", nm_chess, ".RDS")))) {
   fit1b %<-% {
-    readRDS(here("RDS", paste0("fit1b", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit1b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -573,14 +579,14 @@ if (file.exists(here("RDS", paste0("fit1b", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit1b, file = here("RDS", paste0("fit1b", nm_chess, ".RDS")))
+  saveRDS(fit1b, file = here("RDS", trainset, paste0("fit1b", nm_chess, ".RDS")))
 }
 
 # fit2 --------------------------------------------------------------------
 
-if (file.exists(here("RDS", paste0("fit2a", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit2a", nm_chess, ".RDS")))) {
   fit2a %<-% {
-    readRDS(here("RDS", paste0("fit2a", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit2a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -594,12 +600,12 @@ if (file.exists(here("RDS", paste0("fit2a", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit2a, file = here("RDS", paste0("fit2a", nm_chess, ".RDS")))
+  saveRDS(fit2a, file = here("RDS", trainset, paste0("fit2a", nm_chess, ".RDS")))
 }
 
-if (file.exists(here("RDS", paste0("fit2b", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit2b", nm_chess, ".RDS")))) {
   fit2b %<-% {
-    readRDS(here("RDS", paste0("fit2b", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit2b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -612,7 +618,7 @@ if (file.exists(here("RDS", paste0("fit2b", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit2b, file = here("RDS", paste0("fit2b", nm_chess, ".RDS")))
+  saveRDS(fit2b, file = here("RDS", trainset, paste0("fit2b", nm_chess, ".RDS")))
 }
 
 
@@ -620,9 +626,9 @@ if (file.exists(here("RDS", paste0("fit2b", nm_chess, ".RDS")))) {
 ### fit3 --------------------------------------------------------------------
 
 if (JU) {
-  if (file.exists(here("RDS", paste0("fit3a", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit3a", nm_chess, ".RDS")))) {
     fit3a %<-% {
-      readRDS(here("RDS", paste0("fit3a", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit3a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -635,14 +641,14 @@ if (JU) {
       )
     }
     # })
-    saveRDS(fit3a, file = here("RDS", paste0("fit3a", nm_chess, ".RDS")))
+    saveRDS(fit3a, file = here("RDS", trainset, paste0("fit3a", nm_chess, ".RDS")))
   }
 
 
 
-  if (file.exists(here("RDS", paste0("fit3b", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit3b", nm_chess, ".RDS")))) {
     fit3b %<-% {
-      readRDS(here("RDS", paste0("fit3b", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit3b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -655,14 +661,14 @@ if (JU) {
       )
     }
     # })
-    saveRDS(fit3b, file = here("RDS", paste0("fit3b", nm_chess, ".RDS")))
+    saveRDS(fit3b, file = here("RDS", trainset, paste0("fit3b", nm_chess, ".RDS")))
   }
 }
 
 # if(UP){
-if (file.exists(here("RDS", paste0("fit3a", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit3a", nm_chess, ".RDS")))) {
   fit3a %<-% {
-    readRDS(here("RDS", paste0("fit3a", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit3a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -675,14 +681,14 @@ if (file.exists(here("RDS", paste0("fit3a", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit3a, file = here("RDS", paste0("fit3a", nm_chess, ".RDS")))
+  saveRDS(fit3a, file = here("RDS", trainset, paste0("fit3a", nm_chess, ".RDS")))
 }
 
 
 
-if (file.exists(here("RDS", paste0("fit3b", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit3b", nm_chess, ".RDS")))) {
   fit3b %<-% {
-    readRDS(here("RDS", paste0("fit3b", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit3b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -695,16 +701,16 @@ if (file.exists(here("RDS", paste0("fit3b", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit3b, file = here("RDS", paste0("fit3b", nm_chess, ".RDS")))
+  saveRDS(fit3b, file = here("RDS", trainset, paste0("fit3b", nm_chess, ".RDS")))
 }
 # }
 
 ### fit4 --------------------------------------------------------------------
 
 
-if (file.exists(here("RDS", paste0("fit4a", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit4a", nm_chess, ".RDS")))) {
   fit4a %<-% {
-    readRDS(here("RDS", paste0("fit4a", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit4a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -717,13 +723,13 @@ if (file.exists(here("RDS", paste0("fit4a", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit4a, file = here("RDS", paste0("fit4a", nm_chess, ".RDS")))
+  saveRDS(fit4a, file = here("RDS", trainset, paste0("fit4a", nm_chess, ".RDS")))
 }
 
 
-if (file.exists(here("RDS", paste0("fit4b", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit4b", nm_chess, ".RDS")))) {
   fit4b %<-% {
-    readRDS(here("RDS", paste0("fit4b", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit4b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -736,15 +742,15 @@ if (file.exists(here("RDS", paste0("fit4b", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit4b, file = here("RDS", paste0("fit4b", nm_chess, ".RDS")))
+  saveRDS(fit4b, file = here("RDS", trainset, paste0("fit4b", nm_chess, ".RDS")))
 }
 
 ### fit5 --------------------------------------------------------------------
 
 
-if (file.exists(here("RDS", paste0("fit5a", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit5a", nm_chess, ".RDS")))) {
   fit5a %<-% {
-    readRDS(here("RDS", paste0("fit5a", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit5a", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -757,14 +763,14 @@ if (file.exists(here("RDS", paste0("fit5a", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit5a, file = here("RDS", paste0("fit5a", nm_chess, ".RDS")))
+  saveRDS(fit5a, file = here("RDS", trainset, paste0("fit5a", nm_chess, ".RDS")))
 }
 
 
 
-if (file.exists(here("RDS", paste0("fit5b", nm_chess, ".RDS")))) {
+if (file.exists(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))) {
   fit5b %<-% {
-    readRDS(here("RDS", paste0("fit5b", nm_chess, ".RDS")))
+    readRDS(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))
   }
 } else {
   # system.time({
@@ -777,14 +783,14 @@ if (file.exists(here("RDS", paste0("fit5b", nm_chess, ".RDS")))) {
     )
   }
   # })
-  saveRDS(fit5b, file = here("RDS", paste0("fit5b", nm_chess, ".RDS")))
+  saveRDS(fit5b, file = here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))
 }
 
 ### fit6 --------------------------------------------------------------------
 
-  if (file.exists(here("RDS", paste0("fit6a", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit6a", nm_chess, ".RDS")))) {
     fit6a %<-% {
-      readRDS(here("RDS", paste0("fit6a", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit6a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -797,12 +803,12 @@ if (file.exists(here("RDS", paste0("fit5b", nm_chess, ".RDS")))) {
       )
     }
     # })
-    saveRDS(fit6a, file = here("RDS", paste0("fit6a", nm_chess, ".RDS")))
+    saveRDS(fit6a, file = here("RDS", trainset, paste0("fit6a", nm_chess, ".RDS")))
   }
 
-  if (file.exists(here("RDS", paste0("fit6b", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit6b", nm_chess, ".RDS")))) {
     fit6b %<-% {
-      readRDS(here("RDS", paste0("fit6b", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit6b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -815,7 +821,7 @@ if (file.exists(here("RDS", paste0("fit5b", nm_chess, ".RDS")))) {
       )
     }
     # })
-    saveRDS(fit6b, file = here("RDS", paste0("fit6b", nm_chess, ".RDS")))
+    saveRDS(fit6b, file = here("RDS", trainset, paste0("fit6b", nm_chess, ".RDS")))
   }
 
 
@@ -823,9 +829,9 @@ if (FALSE) {
   ### fit7 --------------------------------------------------------------------
 
 
-  if (file.exists(here("RDS", paste0("fit7a", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit7a", nm_chess, ".RDS")))) {
     fit7a %<-% {
-      readRDS(here("RDS", paste0("fit7a", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit7a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -838,13 +844,13 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit7a, file = here("RDS", paste0("fit7a", nm_chess, ".RDS")))
+    saveRDS(fit7a, file = here("RDS", trainset, paste0("fit7a", nm_chess, ".RDS")))
   }
 
 
-  if (file.exists(here("RDS", paste0("fit7b", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit7b", nm_chess, ".RDS")))) {
     fit7b %<-% {
-      readRDS(here("RDS", paste0("fit7b", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit7b", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -857,16 +863,16 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit7b, file = here("RDS", paste0("fit7b", nm_chess, ".RDS")))
+    saveRDS(fit7b, file = here("RDS", trainset, paste0("fit7b", nm_chess, ".RDS")))
   }
 
 
   ### fit8 --------------------------------------------------------------------
 
 
-  if (file.exists(here("RDS", paste0("fit8a", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit8a", nm_chess, ".RDS")))) {
     fit8a %<-% {
-      readRDS(here("RDS", paste0("fit8a", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit8a", nm_chess, ".RDS")))
     }
   } else {
     # system.time({
@@ -879,14 +885,14 @@ if (FALSE) {
       )
     }
     # })
-    saveRDS(fit8a, file = here("RDS", paste0("fit8a", nm_chess, ".RDS")))
+    saveRDS(fit8a, file = here("RDS", trainset, paste0("fit8a", nm_chess, ".RDS")))
   }
 
 
 
-  if (file.exists(here("RDS", paste0("fit8b", nm_chess, ".RDS")))) {
+  if (file.exists(here("RDS", trainset, paste0("fit8b", nm_chess, ".RDS")))) {
     fit8b %<-% {
-      readRDS(here("RDS", paste0("fit8b", nm_chess, ".RDS")))
+      readRDS(here("RDS", trainset, paste0("fit8b", nm_chess, ".RDS")))
     }
   } else {
     system.time({
@@ -899,16 +905,16 @@ if (FALSE) {
         )
       }
     })
-    saveRDS(fit8b, file = here("RDS", paste0("fit8b", nm_chess, ".RDS")))
+    saveRDS(fit8b, file = here("RDS", trainset, paste0("fit8b", nm_chess, ".RDS")))
   }
 }
 
 ### fit9 --------------------------------------------------------------------
 
 
-# if (file.exists(here("RDS", paste0("fit9a", nm_chess, ".RDS")))) {
+# if (file.exists(here("RDS", trainset, paste0("fit9a", nm_chess, ".RDS")))) {
 #   fit9a %<-% {
-#     readRDS(here("RDS", paste0("fit9a", nm_chess, ".RDS")))
+#     readRDS(here("RDS", trainset, paste0("fit9a", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -921,14 +927,14 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit9a, file = here("RDS", paste0("fit9a", nm_chess, ".RDS")))
+#   saveRDS(fit9a, file = here("RDS", trainset, paste0("fit9a", nm_chess, ".RDS")))
 # }
 #
 #
 #
-# if (file.exists(here("RDS", paste0("fit9b", nm_chess, ".RDS")))) {
+# if (file.exists(here("RDS", trainset, paste0("fit9b", nm_chess, ".RDS")))) {
 #   fit9b %<-% {
-#     readRDS(here("RDS", paste0("fit9b", nm_chess, ".RDS")))
+#     readRDS(here("RDS", trainset, paste0("fit9b", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -941,15 +947,15 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit9b, file = here("RDS", paste0("fit9b", nm_chess, ".RDS")))
+#   saveRDS(fit9b, file = here("RDS", trainset, paste0("fit9b", nm_chess, ".RDS")))
 # }
 
 
 # # fit10 -------------------------------------------------------------------
 #
-# if (file.exists(here("RDS", paste0("fit10a", nm_chess, ".RDS")))) {
+# if (file.exists(here("RDS", trainset, paste0("fit10a", nm_chess, ".RDS")))) {
 #   fit10a %<-% {
-#     readRDS(here("RDS", paste0("fit10a", nm_chess, ".RDS")))
+#     readRDS(here("RDS", trainset, paste0("fit10a", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -962,13 +968,13 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit10a, file = here("RDS", paste0("fit10a", nm_chess, ".RDS")))
+#   saveRDS(fit10a, file = here("RDS", trainset, paste0("fit10a", nm_chess, ".RDS")))
 # }
 #
 #
-# if (file.exists(here("RDS", paste0("fit10b", nm_chess, ".RDS")))) {
+# if (file.exists(here("RDS", trainset, paste0("fit10b", nm_chess, ".RDS")))) {
 #   fit10b %<-% {
-#     readRDS(here("RDS", paste0("fit10b", nm_chess, ".RDS")))
+#     readRDS(here("RDS", trainset, paste0("fit10b", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -981,14 +987,14 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit10b, file = here("RDS", paste0("fit10b", nm_chess, ".RDS")))
+#   saveRDS(fit10b, file = here("RDS", trainset, paste0("fit10b", nm_chess, ".RDS")))
 # }
 #
 # # fit11 -------------------------------------------------------------------
 #
-# if (file.exists(here("RDS", paste0("fit11a", nm_chess, ".RDS")))) {
+# if (file.exists(here("RDS", trainset, paste0("fit11a", nm_chess, ".RDS")))) {
 #   fit11a %<-% {
-#     readRDS(here("RDS", paste0("fit11a", nm_chess, ".RDS")))
+#     readRDS(here("RDS", trainset, paste0("fit11a", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -1001,14 +1007,14 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit11a, file = here("RDS", paste0("fit11a", nm_chess, ".RDS")))
+#   saveRDS(fit11a, file = here("RDS", trainset, paste0("fit11a", nm_chess, ".RDS")))
 # }
 #
 #
 #
-# if (file.exists(here("RDS", paste0("fit11b", nm_chess, ".RDS")))) {
+# if (file.exists(here("RDS", trainset, paste0("fit11b", nm_chess, ".RDS")))) {
 #   fit11b %<-% {
-#     readRDS(here("RDS", paste0("fit11b", nm_chess, ".RDS")))
+#     readRDS(here("RDS", trainset, paste0("fit11b", nm_chess, ".RDS")))
 #   }
 # } else {
 #   # system.time({
@@ -1021,7 +1027,7 @@ if (FALSE) {
 #     )
 #   }
 #   # })
-#   saveRDS(fit11b, file = here("RDS", paste0("fit11b", nm_chess, ".RDS")))
+#   saveRDS(fit11b, file = here("RDS", trainset, paste0("fit11b", nm_chess, ".RDS")))
 # }
 #
 
@@ -1049,13 +1055,13 @@ plan(sequential)
 
 # The joint mode is not where you wanna have, therefore it does not work
 # if (JU) {
-#   fml3a <- geometry ~ Intercept + landcover + nepal_geo + beta_mchi * mchi_field
-#   fml3b <- geometry ~ Intercept + landcover + nepal_geo_ + beta_mchi * mchi_field
+#   fml3a <- geometry ~ Intercept + landcover + geology + beta_mchi * mchi_field
+#   fml3b <- geometry ~ Intercept + landcover + geology_ + beta_mchi * mchi_field
 # }
 # Have to specify the Cmatrix to make it work
 # if (UP) {
-#   fml3a <- geometry ~ Intercept + landcover + nepal_geo + beta_mchi * (mchi_near_ + cov_uncertainty)
-#   fml3b <- logarea_m2 ~ Intercept + landcover_ + nepal_geo_ + beta_mchi * (mchi_near_ + cov_uncertainty)
+#   fml3a <- geometry ~ Intercept + landcover + geology + beta_mchi * (mchi_near_ + cov_uncertainty)
+#   fml3b <- logarea_m2 ~ Intercept + landcover_ + geology_ + beta_mchi * (mchi_near_ + cov_uncertainty)
 # }
 if (FALSE) {
   if (JU) {
