@@ -7,8 +7,8 @@ sc <- seq(0,1,length.out = 20)
 
 mod_names_a <- ls(pattern = "fit.a")
 mod_names_b <- ls(pattern = "fit.b")
-pred_names_a <- ls(pattern = "fp.a")
-pred_names_b <- ls(pattern = "fp.b")
+# pred_names_a <- ls(pattern = "fp.a")
+# pred_names_b <- ls(pattern = "fp.b")
 
 # TODO uncertainty SD of scores
 # TODO merge count and count_test to fm_int(...) to compute log score with formula
@@ -38,34 +38,34 @@ if (CV_chess) {
 
 
 
-  f1a_score %<-% {
+  f1a_score <-{
     score(fit1a, newdata = cv_newdata, cv_grid = cv_grid_test, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f2a_score %<-% {
+  f2a_score <-{
     score(fit2a, newdata = cv_newdata, cv_grid = cv_grid_test, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f3a_score %<-% {
+  f3a_score <-{
     score(fit3a, newdata = cv_newdata, cv_grid = cv_grid_test, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f4a_score %<-% {
+  f4a_score <-{
     score(fit4a, newdata = cv_newdata, cv_grid = cv_grid_test, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f5a_score %<-% {
+  f5a_score <-{
     score(fit5a, newdata = cv_newdata, cv_grid = cv_grid_test, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f6a_score %<-% {
+  f6a_score <-{
     score(fit6a, newdata = cv_newdata, cv_grid = cv_grid_test, obs = "count_test", n.samples = 1000, seed = seed)
   }
   
   plan(sequential)
   plan(multicore, workers = 6)
 
-  crps1a %<-% crps_(fit1a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed) 
-  crps2a %<-% crps_(fit2a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
-  crps3a %<-% crps_(fit3a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
-  crps4a %<-% crps_(fit4a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
-  crps5a %<-% crps_(fit5a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
-  crps6a %<-% crps_(fit6a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
+  crps1a <-crps_(fit1a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed) 
+  crps2a <-crps_(fit2a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
+  crps3a <-crps_(fit3a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
+  crps4a <-crps_(fit4a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
+  crps5a <-crps_(fit5a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
+  crps6a <-crps_(fit6a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid_test, n.samples = 1000, seed = seed)
   
   scores_a <- bind_rows(
     bind_cols(f1a_score$mean_score, CRPS_mean = mean(crps1a)),
@@ -138,6 +138,8 @@ if (CV_chess) {
       by = c("geometry")
     ) %>%
     sf::st_as_sf()
+  
+  saveRDS(df_, file = here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
 
 
   AE_range <- range(df$AE - df_$AE_ref)
@@ -169,8 +171,8 @@ if (CV_chess) {
         direction = 1
       ) +
       ggtitle(paste0(i, " scores")) +
-      labs(col = "", fill = i)
-      # guides(col = "none", fill = guide_legend(i))
+      # labs(col = "", fill = i)
+      guides(col = "none", fill = guide_legend(i))
 
     p2 <- ggplot() +
       gg(
@@ -179,8 +181,7 @@ if (CV_chess) {
       ) +
       sfd +
       ggtitle(paste0("fit2a ", i, " score difference")) +
-      labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
-
+          guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
     p3 <- ggplot() +
       gg(
         df_ %>% filter(Model == "fit3a"),
@@ -188,7 +189,7 @@ if (CV_chess) {
       ) +
       sfd +
       ggtitle(paste0("fit3a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
     p4 <- ggplot() +
       gg(
         df_ %>% filter(Model == "fit4a"),
@@ -196,7 +197,7 @@ if (CV_chess) {
       ) +
       sfd +
       ggtitle(paste0("fit4a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
 
     p5 <- ggplot() +
       gg(
@@ -205,7 +206,7 @@ if (CV_chess) {
       ) +
       sfd +
       ggtitle(paste0("fit5a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
     p6 <- ggplot() +
       gg(
         df_ %>% filter(Model == "fit6a"),
@@ -213,11 +214,11 @@ if (CV_chess) {
       ) +
       sfd +
       ggtitle(paste0("fit6a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
 
     patchwork::wrap_plots(p1, p2, p3, p4, p5, p6, nrow = 2, guides = "collect")
     
-    ggsave(paste0("figures/model/cv/", i, "_", train, cv_chess_resol[1], "_diff.png"), width = tw/1.2, height = tw / 3)
+    ggsave(paste0("figures/model/cv/", i, "_", train, cv_chess_resol[1], "_diff_", trainset, ".png"), width = tw/1.2, height = tw / 3)
   }
 
 
@@ -236,7 +237,7 @@ if (CV_chess) {
       # scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
       guides(alpha = "none") +
       xlab(i) + ylab(paste0(i, " ECDF"))  
-    ggsave(paste0("figures/model/cv/", i, "ecdf_", train, cv_chess_resol[1], ".pdf"), width = tw/2, height = tw/5)
+    ggsave(paste0("figures/model/cv/", i, "ecdf_", train, cv_chess_resol[1], ".pdf"), width = tw/1.2, height = tw/3)
     }
 
   ## fitb --------------------------------------------------------------------
@@ -267,12 +268,12 @@ if (CV_chess) {
   }
   
   ls_b_score <- ls(pattern = "b_score")
-  # crps1b %<-% crps_(fit1b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
-  # crps2b %<-% crps_(fit2b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
-  # crps3b %<-% crps_(fit3b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
-  # crps4b %<-% crps_(fit4b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
-  # crps5b %<-% crps_(fit5b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
-  # crps6b %<-% crps_(fit6b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+  # crps1b <-crps_(fit1b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+  # crps2b <-crps_(fit2b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+  # crps3b <-crps_(fit3b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+  # crps4b <-crps_(fit4b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+  # crps5b <-crps_(fit5b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+  # crps6b <-crps_(fit6b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
 
   scores_b <- bind_rows(
     f1b_score$mean_score,
@@ -356,7 +357,7 @@ if (CV_chess) {
       # scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
       guides(alpha = "none") +
       xlab(i) + ylab(paste0(i, " ECDF"))
-    ggsave(paste0("figures/model/cv/", i, "ecdf_b", train, cv_chess_resol[1], ".pdf"), width = tw/2, height = tw/5)
+    ggsave(paste0("figures/model/cv/", i, "ecdf_b", train, cv_chess_resol[1], ".pdf"), width = tw/1.2, height = tw/3)
   }
   
   plan(sequential)
@@ -408,34 +409,34 @@ if (CV_thin) {
   
   # cv_newdata <- cv_newdata %>% left_join(data.frame(cv_grid %>% st_drop_geometry() %>% select(.block, count, count_test)),
   #   by = ".block")
-  f1a_score %<-% {
+  f1a_score <-{
     score(fit1a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f2a_score %<-% {
+  f2a_score <-{
     score(fit2a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f3a_score %<-% {
+  f3a_score <-{
     score(fit3a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f4a_score %<-% {
+  f4a_score <-{
     score(fit4a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f5a_score %<-% {
+  f5a_score <-{
     score(fit5a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
   }
-  f6a_score %<-% {
+  f6a_score <-{
     score(fit6a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
   }
   
   plan(sequential)
   plan(multicore, workers = 6)
   
-  crps1a %<-% crps_(fit1a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed) 
-  crps2a %<-% crps_(fit2a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
-  crps3a %<-% crps_(fit3a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
-  crps4a %<-% crps_(fit4a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
-  crps5a %<-% crps_(fit5a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
-  crps6a %<-% crps_(fit6a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
+  crps1a <-crps_(fit1a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed) 
+  crps2a <-crps_(fit2a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
+  crps3a <-crps_(fit3a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
+  crps4a <-crps_(fit4a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
+  crps5a <-crps_(fit5a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
+  crps6a <-crps_(fit6a, newdata = cv_newdata, obs = "count_test", cv_grid = cv_grid, n.samples = 1000, seed = seed)
   
   
   scores <- bind_rows(
@@ -545,8 +546,8 @@ if (CV_thin) {
         direction = 1
       ) +
       ggtitle(paste0(i, " scores")) +
-      labs(col = "none", fill = i)
-      # guides(col = "none", fill = guide_legend(i))
+      # labs(col = "none", fill = i)
+      guides(col = "none", fill = guide_legend(i))
     
 
     p2 <- ggplot() +
@@ -556,7 +557,7 @@ if (CV_thin) {
       ) +
       sfd +
       ggtitle(paste0("fit2a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
 
     p3 <- ggplot() +
       gg(
@@ -565,7 +566,7 @@ if (CV_thin) {
       ) +
       sfd +
       ggtitle(paste0("fit3a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
     p4 <- ggplot() +
       gg(
         df_ %>% filter(Model == "fit4a"),
@@ -573,7 +574,7 @@ if (CV_thin) {
       ) +
       sfd +
       ggtitle(paste0("fit4a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
 
     p5 <- ggplot() +
       gg(
@@ -582,7 +583,7 @@ if (CV_thin) {
       ) +
       sfd +
       ggtitle(paste0("fit5a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
     p6 <- ggplot() +
       gg(
         df_ %>% filter(Model == "fit6a"),
@@ -590,10 +591,10 @@ if (CV_thin) {
       ) +
       sfd +
       ggtitle(paste0("fit6a ", i, " score difference")) +
-            labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
 
     patchwork::wrap_plots(p1, p2, p3, p4, p5, p6, nrow = 2, guides = "collect")
-    ggsave(paste0("figures/model/cv/", i, cv_thin_resol[1], "_diff.png"), width = tw/1.2, height = tw / 3)
+    ggsave(paste0("figures/model/cv/", i, cv_thin_resol[1], "_diff_", trainset, ".png"), width = tw/1.2, height = tw / 3)
   }
 
   ### ECDF --------------------------------------------------------------------
@@ -610,7 +611,7 @@ if (CV_thin) {
         # scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
       guides(alpha = "none") +
         xlab(i) + ylab(paste0(i, " ECDF")) 
-      ggsave(paste0("figures/model/cv/", i, "ecdf_", cv_thin_resol[1], ".pdf"), width = tw/2, height = tw/5)
+      ggsave(paste0("figures/model/cv/", i, "ecdf_", cv_thin_resol[1], "_",  trainset, ".pdf"), width = tw/1.2, height = tw/3)
   }
   
   ## fitb --------------------------------------------------------------------
@@ -717,7 +718,8 @@ if (CV_thin) {
       stat_ecdf(data = dfb_ %>% filter(Model == "fit6b"), aes(x = .data[[i]] - .data[[paste0(i, "_ref")]], col = "fit6b", alpha = .5)) +
       guides(alpha = "none") +
       xlab(i) + ylab(paste0(i, " ECDF"))
-    ggsave(paste0("figures/model/cv/", i, "ecdf_b", cv_thin_resol[1], ".pdf"), width = tw/2, height = tw/5)
+    # ggsave(paste0("figures/model/cv/", i, "ecdf_b", cv_thin_resol[1], "_",  trainset, ".pdf"), width = tw/4, height = tw/5) # also an option
+    ggsave(paste0("figures/model/cv/", i, "ecdf_b", cv_thin_resol[1], "_",  trainset, ".pdf"), width = tw/1.2, height = tw/3)
   }
   
   plan(sequential)
@@ -818,7 +820,7 @@ if (FALSE) {
         ) +
         sfd +
         ggtitle(paste0("fit2b ", i, " score difference")) +
-              labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                  guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
       
       p3 <- ggplot() +
         gg(
@@ -827,7 +829,7 @@ if (FALSE) {
         ) +
         sfd +
         ggtitle(paste0("fit3a ", i, " score difference")) +
-              labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                  guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
       p4 <- ggplot() +
         gg(
           df_ %>% filter(Model == "fit4a"),
@@ -835,7 +837,7 @@ if (FALSE) {
         ) +
         sfd +
         ggtitle(paste0("fit4a ", i, " score difference")) +
-              labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                  guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
       
       p5 <- ggplot() +
         gg(
@@ -844,7 +846,7 @@ if (FALSE) {
         ) +
         sfd +
         ggtitle(paste0("fit5a ", i, " score difference")) +
-              labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                  guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
       
       p6 <- ggplot() +
         gg(
@@ -853,10 +855,10 @@ if (FALSE) {
         ) +
         sfd +
         ggtitle(paste0("fit6a ", i, " score difference")) +
-              labs(col = "", fill = paste0(i, "-", i, "_ref")) # guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref")))
+                  guides(col = "none", fill = guide_legend(paste0(i, "-", i, "_ref"))) # labs(col = "", fill = paste0(i, "-", i, "_ref")) 
       
       patchwork::wrap_plots(p1, p2, p3, p4, p5, p6, nrow = 2, guides = "collect")
-      ggsave(paste0("figures/model/cv/", i, cv_thin_resol[1], "_diff.png"), width = tw/1.2, height = tw / 3)
+      ggsave(paste0("figures/model/cv/", i, cv_thin_resol[1], "_diff_", trainset, ".png"), width = tw/1.2, height = tw / 3)
     }
   }
   

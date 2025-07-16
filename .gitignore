@@ -44,6 +44,7 @@ figures/
 mesh/
 nodes/
 RDS/
+thesis/
 
 # Temporary files created by R markdown
 *.utf8.md
