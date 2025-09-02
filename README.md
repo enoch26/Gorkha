@@ -23,12 +23,10 @@ This repository documents and references various geospatial datasets used for en
 
 ---
 
----
-
 ## USGS Shape Map 
 
 ### USGS ShakeMap Atlas v4 
-- [PGA]({https://earthquake.usgs.gov/earthquakes/eventpage/us20002926/shakemap/pga)
+- [PGA](https://earthquake.usgs.gov/earthquakes/eventpage/us20002926/shakemap/pga)
 
 ---
 
@@ -71,8 +69,8 @@ _The Himalaya Regional Land Cover Database_
 ---
 ## R code
 
-`compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
-`tile_ldsize.R`: Plots the landslide inventory with PGA contour lines and histogram for landslides. 
-`mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
-`pred_zm.R`: Plots the posterior susceptibility map zoom-out.
-`coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
+-`compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
+-`tile_ldsize.R`: Plots the landslide inventory with PGA contour lines and histogram for landslides. 
+-`mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
+-`pred_zm.R`: Plots the posterior susceptibility map zoom-out.
+-`coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.

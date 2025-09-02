@@ -1,5 +1,30 @@
 library(patchwork)
-source("ice.R")
+CV_thin <- FALSE; CV_chess <- FALSE
+trainset <- ""
+cv_thin_resol <- c(3, 3)
+source("read_data.R")
+
+landslides_c_ <- st_intersection(landslides_c, landcover)
+landslides_c_ <- landslides_c_[!is.na(landslides_c_$CODE1),]
+df <- data.frame(
+  Area_m2 = landslides_c_$Area_m2,
+  logarea_m2 = landslides_c_$logarea_m2, landcover = landslides_c_$CODE1
+)
+ggplot(df, aes(x = logarea_m2, fill = landcover)) +
+  geom_histogram() +
+  labs(y="landslides count", x = expression(paste("log area (", m^{2},")"))) +
+  guides(fill=guide_legend(ncol=2))
+# ggsave("figures/landcover_log_hist.png", width = tw, height = tw / 2)
+ggsave("figures/landcover_log_hist.png", width = tw/2, height = tw / 5)
+
+df_ <- df %>% mutate(land_cover = substr(landcover, 0, 1))
+df_$land_cover <- factor(df_$land_cover, 
+                         levels = c("1", "2", "6", "8"),
+                         labels = c("1: Cultivated Crops", 
+                                    "2: Natural Vegetation",
+                                    "6: Rock/Gravel/Stones/Boulders",
+                                    "8: Ice/Snow/Water bodies"))
+
 tile <- maptiles::get_tiles(st_as_sfc(bnd_out), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
 
 landslides_ <- st_intersection(landslides, bnd)
