@@ -1,17 +1,11 @@
 # for CV ------------------------------------------------------------------
-# https://stackoverflow.com/questions/75584181/how-to-layer-two-geom-sf-layers-in-ggplot-with-two-different-scale-fill-gradient
-# https://inlabru-org.github.io/inlabru/articles/zip_zap_models.html
-# power for the colour scale, see sfd
+
 pwr <- 8
 sc <- seq(0, 1, length.out = 20)
 
 mod_names_a <- ls(pattern = "fit.a")
 mod_names_b <- ls(pattern = "fit.b")
-# pred_names_a <- ls(pattern = "fp.a")
-# pred_names_b <- ls(pattern = "fp.b")
 
-# TODO uncertainty SD of scores
-# TODO merge count and count_test to fm_int(...) to compute log score with formula
 # compute for grid_sf CV_chess -----------------------------------------------------
 if (CV_chess) {
   # plan(multicore, workers = 6)

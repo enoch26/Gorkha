@@ -12,20 +12,7 @@ This repository documents and references various geospatial datasets used for en
 ## 📁 Administrative Boundaries (Shapefiles)
 
 **Main source:**  
-- [Nepal Administrative Boundaries (WGS84)](https://download.hermes.com.np/nepal-administrative-boundary-wgs/)
-
-**Layers included:**
-- National Boundary
-- Province Boundary
-- District Boundary
-- Local Level (Municipality) Boundary
-- Ward Map
-- Settlement Names
-- River Network (Line and Polygon)
-
-**Additional sources:**
-- [Nepal SHP Archive - Google Drive](https://sites.google.com/view/maze215/Maps/Nepal-Shp)
-- [National Geoportal of Nepal](https://nationalgeoportal.gov.np/#/dataset)
+- [Nepal Administrative Boundaries (WGS84)](https://opendatanepal.com/dataset/30a0bbef-a5df-43e9-b87f-b088fb502331/resource/016b2ecc-d890-4573-a29c-1d4b163475da/download/local_unit.zip)
 
 ---
 
@@ -33,6 +20,15 @@ This repository documents and references various geospatial datasets used for en
 
 ### Valagussa et al. (2021)
 - [Inventory & Bounding Box](https://www.sciencebase.gov/catalog/item/61f040e1d34e8b818adc3251)
+
+---
+
+---
+
+## USGS Shape Map 
+
+### USGS ShakeMap Atlas v4 
+- [PGA]({https://earthquake.usgs.gov/earthquakes/eventpage/us20002926/shakemap/pga)
 
 ---
 
@@ -46,10 +42,7 @@ _The Himalaya Regional Land Cover Database_
 
 ## 🪨 Geology
 
-- [Geological Data of Nepal (ScienceBase)](https://www.sciencebase.gov/catalog/item/60c3b89fd34e86b93897ef19)
-- [Province and Regional Geological Maps – Department of Mines and Geology, Nepal](https://dmgnepal.gov.np/en/resources/province-and-regional-geological-maps-6665)
-- [ESCAP 1993 Map (UN Repository)](https://repository.unescap.org/handle/20.500.12870/4866)
-- [Geological Data for Gorkha Earthquake Area (ICIMOD)](https://rds.icimod.org/Home/DataDetail?metadataId=24676&searchlist=True)
+- [Geological Data of Nepal](https://www.researchgate.net/publication/259636889_Regional-scale_landslide_activity_and_landslide_susceptibility_zonation_in_the_Nepal_Himalaya)
 
 ---
 
@@ -61,11 +54,11 @@ _The Himalaya Regional Land Cover Database_
 
 ## Relief Maps
 
-- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with LSDTopoTools, see `lsdtopotools_driver` folder for scripts and details.
+- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with LSDTopoTools (https://lsdtopotools.github.io/), see `lsdtopotools_driver` folder for scripts and details.
 
 ---
 
-## 🌧️ Rainfall Data
+## 🌧️ Annual Rainfall Data
 
 - [CHIRPS v3 Rainfall Data](https://www.chc.ucsb.edu/data/chirps3)
 
@@ -73,20 +66,13 @@ _The Himalaya Regional Land Cover Database_
 
 ## 🗺️ Raster Processing Note
 
-- To fill the gaps caused by buffering between the study area and `nep_geo.shp`, use the script `nepal_geo_rast_fill.R`. This applies nearest-neighbor interpolation to ensure full coverage in the Gorkha district, making the raster suitable for subsequent spatial analysis.
+- To fill the gaps caused by buffering between the study area and `nep_geo.shp`, use the script `nepal_geo_rast_fill.R`. This applies nearest-neighbour interpolation to ensure full coverage in the Gorkha district, making the raster suitable for subsequent spatial analysis.
 
 ---
-
-## 📌 Additional Dataset (Partial Coverage)
-
-- [USGS ScienceBase Item (smaller spatial extent)](https://www.sciencebase.gov/catalog/item/582c74fbe4b04d580bd377e8)
-
----
-
-## ⚙️ Resources for Raster Interpolation Comparison
-
-- [Geometry Operations in R (cubic vs. Lanczos)](https://r.geocompx.org/geometry-operations)
-
 ## R code
+
 `compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
-`nepal_geo_rast_fill.R`:fills gaps between Nep_geo.shp and the study area boundary—caused by buffering—using nearest-neighbor values, ensuring complete and consistent geographical data for the Gorkha district for subsequent analysis.
+`tile_ldsize.R`: Plots the landslide inventory with PGA contour lines and histogram for landslides. 
+`mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
+`pred_zm.R`: Plots the posterior susceptibility map zoom-out.
+`coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
