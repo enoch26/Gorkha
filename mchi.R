@@ -26,8 +26,8 @@ source("read_data.R")
 # param -------------------------------------------------------------------
 
 
-win_size <- 3
-iter <- as.integer(250 / win_size)
+# win_size <- 3
+# iter <- as.integer(250 / win_size)
 
 # pxl ---------------------------------------------------------------------
 
@@ -119,57 +119,6 @@ mchi_sf <- st_as_sf(mchi, coords = c("longitude", "latitude"), crs = 4326) %>%
 # Min.  1st Qu.   Median     Mean  3rd Qu.     Max.
 # -12.28    39.55   157.80   250.37   338.32 12388.00
 
-## terra rasterise ----------------------------------------------
-if(FALSE){
-mchi_vect <- as_spatvector(mchi_sf["m_chi"], geom = "geometry", crs = crs_nepal$input)
-# generate points
-# p <- spatSample(r, 1000, xy=TRUE, replace=TRUE)
-
-if(FALSE){
-  mchi04 <- read.csv(here("data", "lsdtt", "lanczos_mn4", "cop30dem_MChiSegmented.csv"), header = TRUE)
-  mchi05 <- read.csv(here("data", "lsdtt", fdr, "cop30dem_MChiSegmented.csv"), header = TRUE)
-  mchi06 <- read.csv(here("data", "lsdtt", "lanczos_mn6", "cop30dem_MChiSegmented.csv"), header = TRUE)
-  
-  mchi_sf04 <- st_as_sf(mchi04, coords = c("longitude", "latitude"), crs = 4326) %>%
-    st_transform(crs = crs_nepal)
-  mchi_sf05 <- st_as_sf(mchi05, coords = c("longitude", "latitude"), crs = 4326) %>%
-    st_transform(crs = crs_nepal)
-  mchi_sf06 <- st_as_sf(mchi06, coords = c("longitude", "latitude"), crs = 4326) %>%
-    st_transform(crs = crs_nepal)
-
-}
-
-
-# rasterize points as a matrix
-mchi_terra <- rasterize(mchi_vect, rf2ch, fun = mean, field = "m_chi")
-### interpolate = TRUE ----------------------------------------------
-mchi_terra_near <- interpNear(mchi_terra, mchi_vect,
-  field = "m_chi",
-  radius = .1,
-  interpolate = TRUE
-)
-
-mchi_terra_near$log_mchi <- log(mchi_terra_near$mean)
-mchi_terra_near$fd2ch_log_mchi <- mchi_terra_near$log_mchi * fd2ch$fd2ch_exp_inv
-mchi_terra_near$fd2ch_mchi_1000 <- mchi_terra_near$mean / 1000 * fd2ch$fd2ch_exp_inv
-  
-}
-
-
-
-# farridge = 0 ------------------------------------------------------------
-
-rf2fr_zero <- rf2fr %>% crop(bnd, mask = TRUE) %>% filter(cop30dem_RELIEFTOFARRIDGE < 1e-10)
-# too big to visualise anything
-if(FALSE){
-  ggplot() + geom_spatraster(data = rf2fr_zero, maxcell = 5e+07, col = "red") + scale_fill_continuous(na.value = "transparent") +
-    geom_sf(data = mchi_sf, aes(color = log(m_chi+12.3)), geom = "tile",
-            # alpha = .5,
-            size = 0.2) + scale_fill_viridis_c(na.value = "transparent") +
-    geom_sf(data = bnd, col = "red", fill = NA) 
-  ggsave(paste0("data/lsdtt/", fdr, "/figure/rf2fr_zero.pdf"), width = tw, height = tw / 2)
-}
-
 
 # zoom --------------------------------------------------------------------
 # https://stackoverflow.com/questions/49200458/find-nearest-features-using-sf-in-r
@@ -206,78 +155,14 @@ if(FALSE){
   lat <- 28.5
 }
 
-for (i in c(14982, 15329, 17757, 22048)) {
+for (l in c(14982, 15329, 17757, 22048)) {
   source("mchi_zm.R")
 }
-for (i in c(17757)) {
+for (l in c(15329)) {
   source("mchi_zm.R")
 }
 
 
-
-
-### interpNear --------------------------------------------------------------
-mchi_terra_near$cop30dem_AllBasins <- basin$cop30dem_AllBasins
-mchi_terra_near_zm <- crop(mchi_terra_near, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
-
-ggplot() +
-  gg(data = mchi_terra_near_zm$log_mchi) +
-  scale_fill_viridis_c(na.value = "transparent") +
-  geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-  geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
-ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_log_mchi_zm.pdf"), width = tw, height = tw / 2)
-
-ggplot() +
-  gg(data = mchi_terra_near_zm$log_mchi) +
-  scale_fill_viridis_c(na.value = "transparent") +
-  geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-  geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.2, aes(alpha = Area_m2))
-ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_log_mchi_ploy_zm.pdf"), width = tw, height = tw / 2)
-
-mchi_terra_near_zm$rf2ch_log_mchi <- mchi_terra_near_zm$log_mchi * rf2ch_zm$rf2ch_exp_inv
-ggplot() +
-  gg(data = mchi_terra_near_zm$rf2ch_log_mchi) +
-  scale_fill_viridis_c(na.value = "transparent") +
-  geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-  geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
-# geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.2, aes(alpha = Area_m2))
-ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_rf2ch_log_mchi_zm.pdf"), width = tw, height = tw / 2)
-
-mchi_terra_near_zm$fd2ch_log_mchi <- mchi_terra_near_zm$log_mchi * fd2ch_zm$fd2ch_exp_inv
-ggplot() +
-  gg(data = mchi_terra_near_zm$fd2ch_log_mchi) +
-  scale_fill_viridis_c(na.value = "transparent") +
-  geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-  geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
-# geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.2, aes(alpha = Area_m2))
-ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_fd2ch_log_mchi_zm.pdf"), width = tw, height = tw / 2)
-
-pdf("data/lsdtt/lanczos_/figure/rf2ch_hist.pdf")
-hist(as.numeric(rf2ch_zm$rf2ch_km))
-dev.off()
-pdf("data/lsdtt/lanczos_/figure/rf2ch_lnorm_mchi_zm_hist.pdf")
-hist(as.numeric(lnorm(rf2ch_zm$rf2ch_km, mu = 0, sigma = 1)))
-dev.off()
-
-# 0 and 2 seem the best option
-mchi_terra_near_zm$lnorm_rf2ch <- lnorm(rf2ch_zm$rf2ch_km, mu = -1, sigma = 2)
-ggplot() +
-  gg(data = mchi_terra_near_zm$lnorm_rf2ch) +
-  scale_fill_viridis_c(na.value = "transparent") +
-  geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-  geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
-ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_lnorm_rf2ch_zm.pdf"), width = tw, height = tw / 2)
-
-mchi_terra_near_zm$rf2ch_lnorm_mchi <- mchi_terra_near_zm$log_mchi * lnorm(rf2ch_zm$rf2ch_km, mu = -1, sigma = 2)
-mchi_terra_near_zm$rf2ch_mchi <- mchi_terra_near_zm$mean * rf2ch_zm$rf2ch_exp_inv
-mchi_terra_near_zm$fd2ch_mchi <- mchi_terra_near_zm$mean * fd2ch_zm$fd2ch_exp_inv
-
-ggplot() +
-  gg(data = mchi_terra_near_zm$mean) +
-  scale_fill_viridis_c(na.value = "transparent") +
-  geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-  geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
-ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_mchi_zm.pdf"), width = tw, height = tw / 2)
 
 
 
@@ -770,3 +655,119 @@ if (to_plot) {
   ggsave(paste0("data/lsdtt/", fdr, "/figure/mchi_lds.png"), width = tw, height = tw / 2)
 }
 
+## terra rasterise ----------------------------------------------
+if(FALSE){
+  mchi_vect <- as_spatvector(mchi_sf["m_chi"], geom = "geometry", crs = crs_nepal$input)
+  # generate points
+  # p <- spatSample(r, 1000, xy=TRUE, replace=TRUE)
+  
+  if(FALSE){
+    mchi04 <- read.csv(here("data", "lsdtt", "lanczos_mn4", "cop30dem_MChiSegmented.csv"), header = TRUE)
+    mchi05 <- read.csv(here("data", "lsdtt", fdr, "cop30dem_MChiSegmented.csv"), header = TRUE)
+    mchi06 <- read.csv(here("data", "lsdtt", "lanczos_mn6", "cop30dem_MChiSegmented.csv"), header = TRUE)
+    
+    mchi_sf04 <- st_as_sf(mchi04, coords = c("longitude", "latitude"), crs = 4326) %>%
+      st_transform(crs = crs_nepal)
+    mchi_sf05 <- st_as_sf(mchi05, coords = c("longitude", "latitude"), crs = 4326) %>%
+      st_transform(crs = crs_nepal)
+    mchi_sf06 <- st_as_sf(mchi06, coords = c("longitude", "latitude"), crs = 4326) %>%
+      st_transform(crs = crs_nepal)
+    
+  }
+  
+  
+  # rasterize points as a matrix
+  mchi_terra <- rasterize(mchi_vect, rf2ch, fun = mean, field = "m_chi")
+  ### interpolate = TRUE ----------------------------------------------
+  mchi_terra_near <- interpNear(mchi_terra, mchi_vect,
+                                field = "m_chi",
+                                radius = .1,
+                                interpolate = TRUE
+  )
+  
+  mchi_terra_near$log_mchi <- log(mchi_terra_near$mean)
+  mchi_terra_near$fd2ch_log_mchi <- mchi_terra_near$log_mchi * fd2ch$fd2ch_exp_inv
+  mchi_terra_near$fd2ch_mchi_1000 <- mchi_terra_near$mean / 1000 * fd2ch$fd2ch_exp_inv
+  
+}
+
+
+
+# farridge = 0 ------------------------------------------------------------
+
+if(FALSE){
+  rf2fr_zero <- rf2fr %>% crop(bnd, mask = TRUE) %>% filter(cop30dem_RELIEFTOFARRIDGE < 1e-10)
+  # too big to visualise anything
+  ggplot() + geom_spatraster(data = rf2fr_zero, maxcell = 5e+07, col = "red") + scale_fill_continuous(na.value = "transparent") +
+    geom_sf(data = mchi_sf, aes(color = log(m_chi+12.3)), geom = "tile",
+            # alpha = .5,
+            size = 0.2) + scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = bnd, col = "red", fill = NA) 
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/rf2fr_zero.pdf"), width = tw, height = tw / 2)
+}
+
+if(FALSE){
+  ### interpNear --------------------------------------------------------------
+  mchi_terra_near$cop30dem_AllBasins <- basin$cop30dem_AllBasins
+  mchi_terra_near_zm <- crop(mchi_terra_near, basin_zm_sf) %>% filter(cop30dem_AllBasins == basin_info$cop30dem_AllBasins)
+  
+  ggplot() +
+    gg(data = mchi_terra_near_zm$log_mchi) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_log_mchi_zm.pdf"), width = tw, height = tw / 2)
+  
+  ggplot() +
+    gg(data = mchi_terra_near_zm$log_mchi) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.2, aes(alpha = Area_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_log_mchi_ploy_zm.pdf"), width = tw, height = tw / 2)
+  
+  mchi_terra_near_zm$rf2ch_log_mchi <- mchi_terra_near_zm$log_mchi * rf2ch_zm$rf2ch_exp_inv
+  ggplot() +
+    gg(data = mchi_terra_near_zm$rf2ch_log_mchi) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  # geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.2, aes(alpha = Area_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_rf2ch_log_mchi_zm.pdf"), width = tw, height = tw / 2)
+  
+  mchi_terra_near_zm$fd2ch_log_mchi <- mchi_terra_near_zm$log_mchi * fd2ch_zm$fd2ch_exp_inv
+  ggplot() +
+    gg(data = mchi_terra_near_zm$fd2ch_log_mchi) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  # geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.2, aes(alpha = Area_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_fd2ch_log_mchi_zm.pdf"), width = tw, height = tw / 2)
+  
+  pdf("data/lsdtt/lanczos_/figure/rf2ch_hist.pdf")
+  hist(as.numeric(rf2ch_zm$rf2ch_km))
+  dev.off()
+  pdf("data/lsdtt/lanczos_/figure/rf2ch_lnorm_mchi_zm_hist.pdf")
+  hist(as.numeric(lnorm(rf2ch_zm$rf2ch_km, mu = 0, sigma = 1)))
+  dev.off()
+  
+  # 0 and 2 seem the best option
+  mchi_terra_near_zm$lnorm_rf2ch <- lnorm(rf2ch_zm$rf2ch_km, mu = -1, sigma = 2)
+  ggplot() +
+    gg(data = mchi_terra_near_zm$lnorm_rf2ch) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_lnorm_rf2ch_zm.pdf"), width = tw, height = tw / 2)
+  
+  mchi_terra_near_zm$rf2ch_lnorm_mchi <- mchi_terra_near_zm$log_mchi * lnorm(rf2ch_zm$rf2ch_km, mu = -1, sigma = 2)
+  mchi_terra_near_zm$rf2ch_mchi <- mchi_terra_near_zm$mean * rf2ch_zm$rf2ch_exp_inv
+  mchi_terra_near_zm$fd2ch_mchi <- mchi_terra_near_zm$mean * fd2ch_zm$fd2ch_exp_inv
+  
+  ggplot() +
+    gg(data = mchi_terra_near_zm$mean) +
+    scale_fill_viridis_c(na.value = "transparent") +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, aes(alpha = logarea_m2))
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/basin_near_mchi_zm.pdf"), width = tw, height = tw / 2)
+  
+}

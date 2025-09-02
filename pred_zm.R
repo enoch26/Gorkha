@@ -12,7 +12,7 @@ library(gridExtra)
 # https://mapping-in-r-workshop.ryanpeek.org/04_vig_making_inset_maps
 
 tile <- maptiles::get_tiles(st_as_sfc(bnd), provider = "Esri.WorldImagery", crop = TRUE, zoom = 7) 
-res_png <- 500
+res_png <- 300
 
 # Satellite Imagery
 # https://sesync-ci.github.io/blog/mapping-with-Mapbox.html
@@ -56,7 +56,9 @@ for (i in basin_idx) {
   basin_zm_sf <- as_sf(as.polygons(basin_zm)) %>% st_intersection(bnd)
   landslides_poly_zm <- st_intersection(landslides, st_as_sfc(basin_zm_sf))
   landslides_c_zm <- st_intersection(landslides_c, st_as_sfc(basin_zm_sf))
-  landslides_c_test_zm <- st_intersection(landslides_c_test, st_as_sfc(basin_zm_sf))
+  if(CV_thin||CV_chess){
+    landslides_c_test_zm <- st_intersection(landslides_c_test, st_as_sfc(basin_zm_sf))
+  }
 
   log_ksn_tag_zm <- log_ksn_tag %>% crop(basin_zm_sf)
 
@@ -119,8 +121,9 @@ for (i in basin_idx) {
     main_map <- ggplot() +
       geom_spatraster(data = fp_zm_terra_) +
       scale_fill_viridis_c(values = sc, na.value = "transparent", option = "D") +
+      # geom_sf(data = landslides_poly_zm, fill = "red", lwd = 0) +
       geom_sf(data = landslides_c_zm, fill = NA, col = "red", size = 0.005, alpha = 0.5) +
-      geom_sf(data = landslides_c_test_zm, fill = NA, col = "red", size = 0.005, alpha = 0.5) +
+      # geom_sf(data = landslides_c_test_zm, fill = NA, col = "red", size = 0.005, alpha = 0.5) +
       geom_sf(data = basin_zm_sf, fill = NA, col = "red", size = 0.1) +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))

@@ -1,0 +1,28 @@
+read fname: cop30dem
+write fname: cop30dem
+channel heads fname: NULL
+
+write_hillshade: true
+carve_before_fill: true
+
+# We remove parts of the landscape below 250 metres elevation to remove some alluvial fans.
+# minimum_elevation: 250
+# maximum_elevation: 7250
+remove_seas: true
+
+print_segmented_M_chi_map_to_csv: true
+find_basins: true
+# get_basins_from_outlets: true
+# basin_outlet_csv: Outlet.csv
+
+threshold_contributing_pixels: 1000
+minimum_basin_size_pixels: 5000
+maximum_basin_size_pixels: 1000000000
+only_take_largest_basin: false
+search_radius_nodes: 4
+print_basin_raster: true
+find_complete_basins_in_window: true
+print_junctions_to_csv: true
+
+# end of file
+# https://www.youtube.com/watch?v=LLiD4MhVDMc

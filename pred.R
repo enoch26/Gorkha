@@ -4,9 +4,9 @@ library(patchwork)
 ## fit pred ---------------------------------------------------------------------
 
 # to change prediction resolution
-if(FALSE){
-x_pxl <- 1000
-source("pxl.R")
+if (FALSE) {
+  x_pxl <- 1000
+  source("pxl.R")
 }
 
 # > ls( pattern = "fit")
@@ -41,7 +41,7 @@ mod_names_b <- ls(pattern = "fit.b")
 # ggsave(here("figures", "p_pred.pdf"), width = tw, height = tw/2)
 
 
-plan(multicore, workers = 6)
+# plan(multicore, workers = 12)
 
 ### Predict ----------------------------------------------------------------
 fp1a %<-% {
@@ -126,22 +126,22 @@ fp5b %<-% {
 
 
 fp6a %<-% {
-    predict(fit6a,
-      newdata = pxl,
-      formula = fml_lambda(fml6a),
-      n.samples = 100, seed = seed[1]
-    )
-  }
-
-fp6b %<-% {
-    predict(fit6b,
-      newdata = pxl,
-      formula = fml_mu(fml6b),
-      n.samples = 100, seed = seed[1]
-    )
+  predict(fit6a,
+    newdata = pxl,
+    formula = fml_lambda(fml6a),
+    n.samples = 100, seed = seed[1]
+  )
 }
 
-  if (FALSE) {
+fp6b %<-% {
+  predict(fit6b,
+    newdata = pxl,
+    formula = fml_mu(fml6b),
+    n.samples = 100, seed = seed[1]
+  )
+}
+
+if (FALSE) {
   fp7a %<-% {
     predict(fit7a,
       newdata = pxl,
@@ -176,7 +176,8 @@ fp6b %<-% {
 }
 plan(sequential)
 
-
+rm(fp_a)
+rm(fp_b)
 pred_lst_a <- ls(pattern = "fp.a")
 pred_lst_b <- ls(pattern = "fp.b")
 
@@ -194,24 +195,30 @@ if (to_plot) {
       if (names(get(pred_lst_a[[i]])[j]) != "Intercept") {
         p_lst_a[[j]] <- ggplot() +
           gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-          scale_fill_viridis_c(option = "D") + labs(x="",y="") +
+          scale_fill_viridis_c(option = "D") +
+          labs(x = "", y = "") +
           geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-          ggtitle(paste0(names(get(pred_lst_a[[i]])[j]))) 
+          # ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
+          ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(get(pred_lst_a[[i]])[j]))))
       } else {
-        p_lst_a[[j]] <- ggplot() + gg(get(pred_lst_a[[i]])[[j-1]]["mean"], geom = "tile") + 
-          annotate(geom = 'label', 
-                   label = paste0("Intercept = ", get(pred_lst_a[[i]])[[j]]["mean"]),
-                   x = 400, y = 3150) +
-          scale_fill_viridis_c(option = "D") + labs(x="",y="") +
+        p_lst_a[[j]] <- ggplot() +
+          gg(get(pred_lst_a[[i]])[[j - 1]]["mean"], geom = "tile") +
+          annotate(
+            geom = "label",
+            label = paste0("Intercept = ", round(get(pred_lst_a[[i]])[[j]]["mean"],3)),
+            x = 400, y = 3150
+          ) +
+          scale_fill_viridis_c(option = "D") +
+          labs(x = "", y = "") +
           geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-          ggtitle(paste0(names(get(pred_lst_a[[i]])[j-1])))
+          ggtitle(paste0(names(get(pred_lst_a[[i]])[j - 1])))
       }
     }
     wrap_plots(p_lst_a[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
     # ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, ".pdf"), width = .75*tw, height = .75 * tw)
-    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, ".png"), width = .75*tw, height = .75 * tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, ".png"), width = .75 * tw, height = .75 * tw, dpi = 150)
   }
 }
 
@@ -223,24 +230,30 @@ if (to_plot) {
       if (names(get(pred_lst_b[[i]])[j]) != "Intercept") {
         p_lst_b[[j]] <- ggplot() +
           gg(get(pred_lst_b[[i]])[[j]]["mean"], geom = "tile") +
-          scale_fill_viridis_c(option = "D") + labs(x="",y="") +
+          scale_fill_viridis_c(option = "D") +
+          labs(x = "", y = "") +
           geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-          ggtitle(paste0(names(get(pred_lst_b[[i]])[j])))
+          # ggtitle(paste0(names(get(pred_lst_b[[i]])[j])))
+          ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(get(pred_lst_b[[i]])[j]))))
       } else {
-        p_lst_b[[j]] <- ggplot() + gg(get(pred_lst_b[[i]])[[j-1]]["mean"], geom = "tile") + 
-          annotate(geom = 'label', 
-                   label = paste0("Intercept = ", get(pred_lst_b[[i]])[[j]]["mean"]),
-                   x = 400, y = 3150) +
-          scale_fill_viridis_c(option = "D") + labs(x="",y="") +
+        p_lst_b[[j]] <- ggplot() +
+          gg(get(pred_lst_b[[i]])[[j - 1]]["mean"], geom = "tile") +
+          annotate(
+            geom = "label",
+            label = paste0("Intercept = ", round(get(pred_lst_b[[i]])[[j]]["mean"],3)),
+            x = 400, y = 3150
+          ) +
+          scale_fill_viridis_c(option = "D") +
+          labs(x = "", y = "") +
           geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-          ggtitle(paste0(names(get(pred_lst_b[[i]])[j-1])))
+          ggtitle(paste0(names(get(pred_lst_b[[i]])[j - 1])))
       }
     }
     wrap_plots(p_lst_b[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
     # ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, ".pdf"), width = .75*tw, height = .75 * tw)
-    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, ".png"), width = .75*tw, height = .75 * tw)
+    ggsave(paste0("figures/model/", pred_lst_b[i], nm_chess, ".png"), width = .75 * tw, height = .75 * tw, dpi = 150)
   }
 }
 
@@ -251,14 +264,14 @@ if (to_plot) {
 
 for (i in c(mod_names_a, mod_names_b)) {
   rw2_nm <- names(get(i)[["summary.random"]])[get(i)[["model.random"]] == "RW2 model"]
-  for(j in rw2_nm){
+  for (j in rw2_nm) {
     pred <- predict(
       get(i),
       data.frame(cov_range = seq(get(paste0("min_", j)), get(paste0("max_", j)), length.out = 1000)),
-      formula = as.formula(paste0("~",  j, "_eval(cov_range)"))
+      formula = as.formula(paste0("~", j, "_eval(cov_range)"))
     )
-  
-     ggplot(pred) +
+
+    ggplot(pred) +
       geom_line(aes(cov_range, mean)) +
       geom_ribbon(
         aes(cov_range,
@@ -273,21 +286,17 @@ for (i in c(mod_names_a, mod_names_b)) {
           ymax = mean + 1 * sd
         ),
         alpha = 0.2
-      ) + 
-       ggtitle(j)
-  
-    ggsave(here("figures", "model", "rw2", paste0(i, "_", j, "_", trainset, nm_chess, ".pdf")), width = tw/4, height = tw / 5)
-    
-  }
-  
+      ) +
+      ggtitle(j)
 
-  
+    ggsave(here("figures", "model", "rw2", paste0(i, "_", j, "_", trainset, nm_chess, ".pdf")), width = tw / 4, height = tw / 5)
+  }
 }
 
 # txt summary output ------------------------------------------------------
 
 
-sink(paste0("figures/model/mod_lst_a", nm_chess," .txt"), append = TRUE)
+sink(paste0("figures/model/mod_lst_a", nm_chess, " .txt"), append = TRUE)
 for (i in 1:length(mod_names_a)) {
   print(mod_names_a[i])
   print(summary(get(mod_names_a[i])))
@@ -298,7 +307,7 @@ for (i in 1:length(mod_names_a)) {
 }
 sink()
 
-sink(paste0("figures/model/mod_lst_b", nm_chess,".txt"), append = TRUE)
+sink(paste0("figures/model/mod_lst_b", nm_chess, ".txt"), append = TRUE)
 for (i in 1:length(mod_names_b)) {
   print(mod_names_b[i])
   print(summary(get(mod_names_b[i])))
@@ -383,7 +392,7 @@ plan(sequential)
 
 # https://jayrobwilliams.com/posts/2021/05/geom-sf-facet
 # TODO with future_lapply
-if(FALSE){
+if (FALSE) {
   if (to_plot) {
     for (i in 1:length(pred_lst_a)) {
       p_lst_a <- list()
@@ -392,28 +401,32 @@ if(FALSE){
         if (names(get(pred_lst_a[[i]])[j]) != "Intercept") {
           p_lst_a[[j]] <- ggplot() +
             gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-            scale_fill_viridis_c(option = "D") + labs(x="",y="") +
+            scale_fill_viridis_c(option = "D") +
+            labs(x = "", y = "") +
             geom_sf(data = landslides_c, aes(col = "red", alpha = log(Area_m2)), size = 0.1) +
             geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
             ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
         } else {
-          p_lst_a[[j]] <- ggplot() + gg(get(pred_lst_a[[i]])[[j-1]]["mean"], geom = "tile") + 
-            annotate(geom = 'label', 
-                     label = paste0("Intercept = ", get(pred_lst_a[[i]])[[j]]["mean"]),
-                     x = 400, y = 3150) +
-            scale_fill_viridis_c(option = "D") + labs(x="",y="") +
+          p_lst_a[[j]] <- ggplot() +
+            gg(get(pred_lst_a[[i]])[[j - 1]]["mean"], geom = "tile") +
+            annotate(
+              geom = "label",
+              label = paste0("Intercept = ", round(get(pred_lst_a[[i]])[[j]]["mean"],3)),
+              x = 400, y = 3150
+            ) +
+            scale_fill_viridis_c(option = "D") +
+            labs(x = "", y = "") +
             geom_sf(data = landslides_c, aes(col = "red", alpha = log(Area_m2)), size = 0.1) +
             geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-            ggtitle(paste0(names(get(pred_lst_a[[i]])[j-1])))
+            ggtitle(paste0(names(get(pred_lst_a[[i]])[j - 1])))
         }
       }
       wrap_plots(p_lst_a[-1], ncol = 2) + # TODO fail to share legend scale, guides = "collect") + needa align scale
         plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
       print(paste0(deparse(ff, width.cutoff = 150L)))
-      ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lds.png"), width = .75*tw, height = .75 * tw)
+      ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lds.png"), width = .75 * tw, height = .75 * tw)
     }
   }
-  
 }
 
 
@@ -439,7 +452,7 @@ if(FALSE){
 
 # lambda_sc <- scale_fill_viridis_c(limits = c(-1, 15), name = "lambda")
 # intensity in exponential scale
-if(FALSE){
+if (FALSE) {
   if (to_plot) {
     for (i in 1:length(pred_lst_a)) {
       p_lst_alambda <- list()
@@ -464,5 +477,4 @@ if(FALSE){
       ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_lambda.pdf"), width = tw, height = tw)
     }
   }
-  
 }

@@ -1,4 +1,4 @@
-concavity <- FALSE
+concavity <- TRUE
 # concavity <- TRUE
 # find the basin id for zoomed area
 # long <- 85.5
@@ -68,28 +68,7 @@ landslides_zm_df <- as.data.frame(landslides_zm)
 
 
 if (to_plot) {
-  if (FALSE) {
-    # with hillshade hs
-    pal <- gray.colors(100, rev = TRUE)
-    ggplot() +
-      geom_spatraster(data = hs_zm, aes(fill = cop30dem_hs)) +
-      scale_fill_gradientn(colours = pal, na.value = NA) +
-      #   scale_fill_gradientn(colors = gray.colors(100,
-      #   start = 0.2,
-      #   end = .8, rev = TRUE, na.value = NA
-      # )) +
-      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
-      gg(
-        data = mchi_sf_zm, aes(color = log(m_chi)),
-        # geom = "tile",
-        # alpha = .5,
-        size = 0.5
-      ) +
-      geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-      scale_color_viridis_c()
-    # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
-  }
+
 
 
 
@@ -109,8 +88,8 @@ if (to_plot) {
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
     # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile.png"), width = tw, height = tw / 2, dpi = 100)
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile.png"), width = tw/2, height = tw / 4, dpi = 100)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile.pdf"), width = tw/2, height = tw / 4)
 
     ggplot() +
       # geom_spatraster_rgb(data = tile) +
@@ -120,19 +99,26 @@ if (to_plot) {
         maxcell = 5e+06
       ) +
       # scale_fill_grass_c(palette = "celsius")
-      scale_fill_grass_c(palette = "viridis", name = expression(log_k[sn])) +
+      scale_fill_grass_c(na.value = "transparent", palette = "viridis", name = expression(log_k[sn])) +
       # geom_sf(data = mchi_sf_zm, aes(color = log_m_chi),
       #    # geom = "tile",
       #    alpha = .5,
       #    size = 0.1) +
       geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
       geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-      scale_color_viridis_c(na.value = "transparent") +
+      # labs(color = expression(paste("log(area)", m^{2}))) + 
+      # scale_color_viridis_c(na.value = "transparent", name = expression(log_k[sn])) +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
 
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.pdf"), width = tw, height = tw / 2)
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.png"), width = tw, height = tw / 2, dpi =100)
+    if(l == 15329){
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.pdf"), width = tw/3, height = tw /3)
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.png"), width = tw/3, height = tw /3, dpi = 100)
+    } else{
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.pdf"), width = tw/2, height = tw / 4)
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.png"), width = tw/2, height = tw / 4, dpi = 100)
+      
+    }
     # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tag.pdf"), width = tw, height = tw / 2)
 
     ggplot() +
@@ -144,14 +130,23 @@ if (to_plot) {
         ), # geom = "tile",
         size = 0.5
       ) +
-      geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.1, aes(alpha = log(Area_m2))) +
-      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
       scale_color_viridis_c(name = expression(log_k[sn])) +
+      geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
+      # geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.1, aes(alpha = log(Area_m2))) +
+      geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+      # guides(fill = "log(area)") +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
     # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile_poly.pdf"), width = tw, height = tw / 2)
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_poly.png"), width = tw, height = tw / 2, dpi = 100)
-  }
+    if(l == 15329){
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_poly.png"), width = tw/3, height = tw /3, dpi = 100)
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_poly.pdf"), width = tw/3, height = tw /3)
+    } else{
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_poly.pdf"), width = tw/1.5, height = tw /3)
+      ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_poly.png"), width = tw/1.5, height = tw /3, dpi = 100)
+    }
+    }
+
 
   ## mchi analysis -----------------------------------------------------------
   # https://lsdtopotools.github.io/LSDTT_documentation/LSDTT_visualisation.html
@@ -166,9 +161,12 @@ if (to_plot) {
       geom_point(
         data = landslides_zm_df,
         aes(x = flow_distance, y = elevation), col = "red", size = 0.5
-      ) +
+      ) + xlab("Relative flow distance (m)") + ylab("Elevation (m)") +
+      # theme(axis.text.y = element_blank(),
+      #   axis.ticks = element_blank())
       scale_color_viridis_c(name = expression(log_k[sn]))
-    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_mchi_analysis.png"), width = tw, height = tw / 2)
+    ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_mchi_analysis.png"), width = tw/2, height = tw /4)
+    # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_mchi_analysis.png"), width = tw/2, height = tw /4)
   }
 }
 
@@ -268,7 +266,7 @@ if (concavity) {
     patchwork::wrap_plots(mchi_ls, guide = "collect", byrow = TRUE, ncol = 3) + plot_annotation(tag_levels = 'A') &
       theme(legend.position = "bottom")
     ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.pdf"), width = tw, height = tw / 2)
-    ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.png"), width = tw, height = tw / 2, dpi = 100)
+    ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.png"), width = tw, height = tw / 2, dpi = 75)
     # ggsave(paste0("data/lsdtt/", j, "_", i, ".pdf"), width = tw, height = tw / 2)
   }
 }
@@ -391,4 +389,28 @@ if (FALSE) {
     ggspatial::annotation_scale(location = "br") +
     ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
   ggsave(paste0("data/lsdtt/", fdr, "/figure/fd2fr_zero_zm.pdf"), width = tw, height = tw / 2)
+}
+
+if (FALSE) {
+  # with hillshade hs
+  pal <- gray.colors(100, rev = TRUE)
+  ggplot() +
+    geom_spatraster(data = hs_zm, aes(fill = cop30dem_hs)) +
+    scale_fill_gradientn(colours = pal, na.value = NA) +
+    #   scale_fill_gradientn(colors = gray.colors(100,
+    #   start = 0.2,
+    #   end = .8, rev = TRUE, na.value = NA
+    # )) +
+    geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
+    gg(
+      data = mchi_sf_zm, aes(color = log(m_chi)),
+      # geom = "tile",
+      # alpha = .5,
+      size = 0.5
+    ) +
+    geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
+    labs(col= expression(log(k['sn']))) +
+    scale_color_viridis_c()
+  # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
+  ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
 }

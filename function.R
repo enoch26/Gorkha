@@ -732,6 +732,7 @@ gkernel <- function(mat, norm = TRUE) {
 #'
 cv_partition <- function(samplers, resolution = NULL, nrows = NULL, ncols = NULL, 
                          chess = TRUE) {
+  require(sf)
   # Create a grid for the given boundary
   if (is.null(resolution)) {
     grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers))),
@@ -753,8 +754,15 @@ cv_partition <- function(samplers, resolution = NULL, nrows = NULL, ncols = NULL
     # spatSample(x = gridPolygon, size = 0.5*nrow(gridPolygon), method="random", strata=NULL, chess="black")
     grid_chess <- init(grid, "chess")
     grid_chess_sf <- st_intersection(st_cast(st_as_sf(terra::as.polygons(grid_chess)), "POLYGON"), samplers)
+    r_version <- getRversion()
+    # sf_version <- packageVersion("sf")
+    if (r_version <= "4.4.2") {
     grid_chess_white_sf <- grid_chess_sf[grid_chess_sf$lyr.1==1,]
     grid_chess_black_sf <- grid_chess_sf[grid_chess_sf$lyr.1==0,]
+    }else{
+      grid_chess_white_sf <- grid_chess_sf[grid_chess_sf$chess==1,]
+      grid_chess_black_sf <- grid_chess_sf[grid_chess_sf$chess==0,]
+    }
     return(list(white=grid_chess_white_sf, black=grid_chess_black_sf))
     # ggplot() + gg(data = grid_chess_white_sf, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")
     # ggplot() + gg(data = grid_chess_black_sf, aes(fill = lyr.1)) + geom_sf(data = nepal_bnd, col = "red", fill = "NA")

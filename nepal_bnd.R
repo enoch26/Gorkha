@@ -3,6 +3,25 @@ if(is.null(CV_thin) & is.null(CV_chess)){
   CV_chess <- FALSE
 }
 
+# shp_url <- "https://opendatanepal.com/dataset/30a0bbef-a5df-43e9-b87f-b088fb502331/resource/016b2ecc-d890-4573-a29c-1d4b163475da/download/local_unit.zip"
+# zip_path <- here("data", "local_unit.zip")
+# 
+# if (!file.exists(zip_path)) {
+#   if (!dir.exists(dirname(zip_path))) {
+#     dir.create(dirname(zip_path), recursive = TRUE)
+#   }
+#   options(timeout = 600)
+#   download.file(
+#     url = shp_url,
+#     destfile = zip_path,
+#     method = "wget",
+#     extra = "--no-check-certificate"
+#   )
+#   utils::unzip(zip_path,
+#                exdir = dirname(zip_path)
+#   )
+# }
+
 nepal_nc %<-% {
   st_read(here(
     "data", "Local Unit",
@@ -101,7 +120,10 @@ bnd_out <- st_cast(
 # st_crs(nepal_nc) <- NA
 
 # landslides data ---------------------------------------------------------
-
+p1 <- st_point(c(84.731, 28.231)) # https://www.sciencebase.gov/catalog/item/587352ebe4b0a829a31e309a
+p2 <- st_point(c(86.06, 27.8)) # https://www.sciencedirect.com/science/article/pii/S240584401732772X
+epic <- st_sfc(p1, p2 , crs = 4326) %>% 
+  st_transform(crs = crs_nepal) # epicenter of the 2015 Gorkha earthquake
 
 landslides %<-% {
   st_read(

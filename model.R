@@ -35,6 +35,13 @@ knots <- seq(min_fd2ch, max_fd2ch, length = 25)
 mesh_fd2ch <- fm_mesh_1d(knots, interval = c(0, max_fd2ch), degree = 2, boundary = "free")
 fd2ch_mapper <- bru_mapper(mesh_fd2ch, indexed = TRUE)
 
+min_rainfall_rw2 <- minmax(rainfall$precip_2015)[1]
+max_rainfall_rw2 <- minmax(rainfall$precip_2015)[2]
+knots <- seq(min_rainfall_rw2, max_rainfall_rw2, length = 25)
+mesh_rainfall <- fm_mesh_1d(knots, interval = c(min_rainfall_rw2, max_rainfall_rw2), degree = 2, boundary = "free")
+rainfall_mapper <- bru_mapper(mesh_rainfall, indexed = TRUE)
+
+# mw78
 min_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean_exp"])[1]
 max_pga_mean_raster_rw2 <- minmax(pga_mean_raster["pga_mean_exp"])[2]
 knots <- seq(min_pga_mean_raster_rw2, max_pga_mean_raster_rw2, length = 25)
@@ -47,6 +54,37 @@ knots <- seq(min_log_pga_mean_raster_rw2, max_log_pga_mean_raster_rw2, length = 
 mesh_log_pga_mean <- fm_mesh_1d(knots, interval = c(min_log_pga_mean_raster_rw2, max_log_pga_mean_raster_rw2), degree = 2, boundary = "free")
 log_pga_mean_mapper <- bru_mapper(mesh_log_pga_mean, indexed = TRUE)
 
+# merge
+min_pga_mean_raster_merge_rw2 <- minmax(pga_mean_raster_merge["pga_mean_exp"])[1]
+max_pga_mean_raster_merge_rw2 <- minmax(pga_mean_raster_merge["pga_mean_exp"])[2]
+knots <- seq(min_pga_mean_raster_merge_rw2, max_pga_mean_raster_merge_rw2, length = 25)
+mesh_pga_mean_merge <- fm_mesh_1d(knots, interval = c(min_pga_mean_raster_merge_rw2, max_pga_mean_raster_merge_rw2), degree = 2, boundary = "free")
+pga_mean_merge_mapper <- bru_mapper(mesh_pga_mean_merge, indexed = TRUE)
+
+min_log_pga_mean_raster_merge_rw2 <- minmax(pga_mean_raster_merge["pga_mean"])[1]
+max_log_pga_mean_raster_merge_rw2 <- minmax(pga_mean_raster_merge["pga_mean"])[2]
+knots <- seq(min_log_pga_mean_raster_merge_rw2, max_log_pga_mean_raster_merge_rw2, length = 25)
+mesh_log_pga_mean_merge <- fm_mesh_1d(knots, interval = c(min_log_pga_mean_raster_merge_rw2, max_log_pga_mean_raster_merge_rw2), degree = 2, boundary = "free")
+log_pga_mean_merge_mapper <- bru_mapper(mesh_log_pga_mean_merge, indexed = TRUE)
+# mw73
+min_pga_mean_raster_mw73_rw2 <- minmax(pga_mean_raster_mw73["pga_mean_exp"])[1]
+max_pga_mean_raster_mw73_rw2 <- minmax(pga_mean_raster_mw73["pga_mean_exp"])[2]
+knots <- seq(min_pga_mean_raster_mw73_rw2, max_pga_mean_raster_mw73_rw2, length = 25)
+mesh_pga_mean_mw73 <- fm_mesh_1d(knots, interval = c(min_pga_mean_raster_mw73_rw2, max_pga_mean_raster_mw73_rw2), degree = 2, boundary = "free")
+pga_mean_mw73_mapper <- bru_mapper(mesh_pga_mean_mw73, indexed = TRUE)
+
+min_log_pga_mean_raster_mw73_rw2 <- minmax(pga_mean_raster_mw73["pga_mean"])[1]
+max_log_pga_mean_raster_mw73_rw2 <- minmax(pga_mean_raster_mw73["pga_mean"])[2]
+knots <- seq(min_log_pga_mean_raster_mw73_rw2, max_log_pga_mean_raster_mw73_rw2, length = 25)
+mesh_log_pga_mean_mw73 <- fm_mesh_1d(knots, interval = c(min_log_pga_mean_raster_mw73_rw2, max_log_pga_mean_raster_mw73_rw2), degree = 2, boundary = "free")
+log_pga_mean_mw73_mapper <- bru_mapper(mesh_log_pga_mean_mw73, indexed = TRUE)
+
+min_log_pga_mean_raster_merge_rw2 <- minmax(pga_mean_raster_merge["pga_mean"])[1]
+max_log_pga_mean_raster_merge_rw2 <- minmax(pga_mean_raster_merge["pga_mean"])[2]
+knots <- seq(min_log_pga_mean_raster_merge_rw2, max_log_pga_mean_raster_merge_rw2, length = 25)
+mesh_log_pga_mean_merge <- fm_mesh_1d(knots, interval = c(min_log_pga_mean_raster_merge_rw2, max_log_pga_mean_raster_merge_rw2), degree = 2, boundary = "free")
+log_pga_mean_merge_mapper <- bru_mapper(mesh_log_pga_mean_merge, indexed = TRUE)
+
 if(FALSE){
   min_twi <- minmax(twi["logtwi"])[1]
   max_twi <- minmax(twi["logtwi"])[2]
@@ -56,7 +94,8 @@ if(FALSE){
 }
 
 hyper_rw <- list(prec = list(prior = "pc.prec", param = c(1, 0.1)))
-plan(multicore, workers = 10)
+# plan(multicore, workers = 20)
+# plan(multicore, workers = 10)
 
 
 # PC prior for aspect -----------------------------------------------------
@@ -124,6 +163,30 @@ cmp_ <- ~ Intercept(1) +
     mapper = pga_mean_mapper, scale.model = TRUE, constr = TRUE,
     hyper = hyper_rw
   ) +
+  log_pga_mean_raster_merge(pga_mean_raster_merge["pga_mean"], model = "linear") +
+  pga_mean_raster_merge(pga_mean_raster_merge["pga_mean_exp"], model = "linear") +
+  log_pga_mean_raster_merge_rw2(pga_mean_raster_merge["pga_mean"],
+    model = "rw2",
+    mapper = log_pga_mean_merge_mapper, scale.model = TRUE, constr = TRUE,
+    hyper = hyper_rw
+  ) +
+  pga_mean_raster_merge_rw2(pga_mean_raster["pga_mean_exp"],
+    model = "rw2",
+    mapper = pga_mean_merge_mapper, scale.model = TRUE, constr = TRUE,
+    hyper = hyper_rw
+  ) +
+  log_pga_mean_raster_mw73(pga_mean_raster_mw73["pga_mean"], model = "linear") +
+  pga_mean_raster_mw73(pga_mean_raster_mw73["pga_mean_exp"], model = "linear") +
+  log_pga_mean_raster_mw73_rw2(pga_mean_raster_mw73["pga_mean"],
+    model = "rw2",
+    mapper = log_pga_mean_mw73_mapper, scale.model = TRUE, constr = TRUE,
+    hyper = hyper_rw
+  ) +
+  pga_mean_raster_mw73_rw2(pga_mean_raster["pga_mean_exp"],
+    model = "rw2",
+    mapper = pga_mean_mw73_mapper, scale.model = TRUE, constr = TRUE,
+    hyper = hyper_rw
+  ) +
   # pga_mean_raster(pga_mean_raster["pga_mean"], model = "linear") +
   landcover(
     bru_fill_missing(
@@ -134,6 +197,14 @@ cmp_ <- ~ Intercept(1) +
     model = "iid", constr = F,
     extraconstr = list(A = A_lu, e = e_lu),
     hyper = hyper_iid
+  ) +
+  su_rf(su_hima["relief_avg"], model = "linear") +
+  su_twi(su_hima["twi_avg"], model = "linear") +
+  rainfall(rainfall$precip_2015, model = "linear") +
+  rainfall_rw2(rainfall$precip_2015,
+            model = "rw2",
+            mapper = rainfall_mapper, scale.model = TRUE, constr = TRUE,
+            hyper = hyper_rw
   ) +
   landcover_(
     bru_fill_missing(
@@ -232,28 +303,70 @@ cmp_ <- ~ Intercept(1) +
   # asp(dem_terrain_mask["aspect"], model = matern_asp) +
   #   asp_gp(dem_terrain_mask["asp_gp"], model = "rw2", cyclic=TRUE) +
   dem_inv(1/dem["dem_km"], model = "linear") +
-  dem(dem["dem_km"], model = "linear")
+  dem(dem["dem_km"], model = "linear") +
+  slope(dem_terrain_mask["slope"], model = "linear") 
+
 # crv_planform(crv_planform["crv_planform"], model = "linear") +
 # crv_profile(crv_profile["crv_profile"], model = "linear")
 
 # formula -----------------------------------------------------------------
-fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag 
-fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag 
+# fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2
+# fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2
 
-fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + sqrt_ksn_tag
-fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster+ landcover_ + geology_ + sqrt_ksn_tag
+# 14072025 in the thesis
+fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag + rainfall_rw2
+fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag + rainfall
 
-fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2
-fml3b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2
+# 16072025 compared to SU
+# fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + su_rf
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster  + landcover_ + geology_ + su_rf
+# fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + su_twi
+# fml3b <- logarea_m2 ~ Intercept + log_pga_mean_raster  + landcover_ + geology_ + su_twi
+# fml2a <- geometry ~ Intercept + pga_mean_raster_mw73_rw2 + landcover + geology + log_ksn_tag
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster_mw73  + landcover_ + geology_ + log_ksn_tag
+# fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + log_ksn_tag
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73  + landcover_ + geology_ + log_ksn_tag
 
-fml4a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + dem
-fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + dem
+# fml2a <- geometry ~ Intercept + pga_mean_raster_merge_rw2 + landcover + geology + log_ksn_tag
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster_merge + landcover_ + geology_ + log_ksn_tag
 
-fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + rf2ch_inv
-fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster +landcover_ + geology_ + rf2ch
+fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + sqrt_ksn_tag + rainfall_rw2
+fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster+ landcover_ + geology_ + sqrt_ksn_tag + rainfall
+#14072025 in the thesis without rainfall the rest the same
+# fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag + rainfall
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster+ landcover_ + geology_ + log_ksn_tag + rainfall
+# fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + sqrt_ksn_tag
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster+ landcover_ + geology_ + sqrt_ksn_tag
 
-fml6a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + fd2ch_inv
-fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + fd2ch
+fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + rainfall_rw2
+fml3b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2 + rainfall
+
+fml4a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + slope + rainfall_rw2
+fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + slope + rainfall
+
+fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + rf2ch_inv + rainfall_rw2
+fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster +landcover_ + geology_ + rf2ch + rainfall
+
+fml6a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + fd2ch_inv + rainfall_rw2
+fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + fd2ch + rainfall
+
+# fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + log_ksn_tag 
+# fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73 + landcover_ + geology_ + log_ksn_tag 
+# 
+# fml2a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + sqrt_ksn_tag
+# fml2b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73+ landcover_ + geology_ + sqrt_ksn_tag
+# 
+# fml3a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + log_ksn_tag_rw2
+# fml3b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73 + landcover_ + geology_ + log_ksn_tag_rw2
+# 
+# fml4a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + dem
+# fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73 + landcover_ + geology_ + dem
+# 
+# fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + log_ksn_tag_rw2 + rf2ch_inv
+# fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73 +landcover_ + geology_ + rf2ch
+# 
+# fml6a <- geometry ~ Intercept + pga_mean_raster_rw2 + pga_mean_raster_mw73_rw2 + landcover + geology + log_ksn_tag_rw2 + fd2ch_inv
+# fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + log_pga_mean_raster_mw73 + landcover_ + geology_ + fd2ch
 
 # Putting everything into a basket is not improving, not better than fml1
 # fml2a <- geometry ~ Intercept + pga_mean_raster + landcover + geology + ksn_tag + rf2ch + rf2fr
@@ -825,10 +938,67 @@ if (file.exists(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))) {
   }
 
 
+
+# run model with future ---------------------------------------------------
+
+
+plan(sequential)
+
+
+# Intensity Prediction ----------------------------------------------------
+
+
+# pts <- st_sf(
+#   geometry = st_sample(bnd,
+#     type = "regular", # regular here because we want to have a accurate and smooth field realisation
+#     size = 300 * 300
+#   ), # either total size, or a numeric vector with sample sizes for each feature geometry.
+#   crs = fm_crs(bnd)
+# )
+
+
+# model not working -------------------------------------------------------
+
+
+
+# The joint mode is not where you wanna have, therefore it does not work
+# if (JU) {
+#   fml3a <- geometry ~ Intercept + landcover + geology + beta_mchi * mchi_field
+#   fml3b <- geometry ~ Intercept + landcover + geology_ + beta_mchi * mchi_field
+# }
+# Have to specify the Cmatrix to make it work
+# if (UP) {
+#   fml3a <- geometry ~ Intercept + landcover + geology + beta_mchi * (mchi_near_ + cov_uncertainty)
+#   fml3b <- logarea_m2 ~ Intercept + landcover_ + geology_ + beta_mchi * (mchi_near_ + cov_uncertainty)
+# }
+if (FALSE) {
+  if (JU) {
+    # this defo not work Finn said
+    mchi <- read.csv(here("data", "lsdtt", fdr, "cop30dem_MChiSegmented.csv"), header = TRUE)
+    mchi_sf <- st_as_sf(mchi, coords = c("longitude", "latitude"), crs = 4326) %>%
+      st_transform(crs = crs_nepal) %>%
+      st_intersection(bnd_out)
+
+    matern <- inla.spde2.pcmatern(mesh_fm,
+      prior.range = c(4, 0.1),
+      prior.sigma = c(2, 0.1)
+    )
+
+    cmp_mchi <- ~ mchi_field(main = geometry, model = matern)
+
+    fml_mchi <- m_chi ~ mchi_field
+
+    lik_mchi <- bru_obs("Gaussian",
+      formula = fml_mchi,
+      data = mchi_sf
+    )
+  }
+}
+
 if (FALSE) {
   ### fit7 --------------------------------------------------------------------
-
-
+  
+  
   if (file.exists(here("RDS", trainset, paste0("fit7a", nm_chess, ".RDS")))) {
     fit7a %<-% {
       readRDS(here("RDS", trainset, paste0("fit7a", nm_chess, ".RDS")))
@@ -846,8 +1016,8 @@ if (FALSE) {
     # })
     saveRDS(fit7a, file = here("RDS", trainset, paste0("fit7a", nm_chess, ".RDS")))
   }
-
-
+  
+  
   if (file.exists(here("RDS", trainset, paste0("fit7b", nm_chess, ".RDS")))) {
     fit7b %<-% {
       readRDS(here("RDS", trainset, paste0("fit7b", nm_chess, ".RDS")))
@@ -865,11 +1035,11 @@ if (FALSE) {
     # })
     saveRDS(fit7b, file = here("RDS", trainset, paste0("fit7b", nm_chess, ".RDS")))
   }
-
-
+  
+  
   ### fit8 --------------------------------------------------------------------
-
-
+  
+  
   if (file.exists(here("RDS", trainset, paste0("fit8a", nm_chess, ".RDS")))) {
     fit8a %<-% {
       readRDS(here("RDS", trainset, paste0("fit8a", nm_chess, ".RDS")))
@@ -887,9 +1057,9 @@ if (FALSE) {
     # })
     saveRDS(fit8a, file = here("RDS", trainset, paste0("fit8a", nm_chess, ".RDS")))
   }
-
-
-
+  
+  
+  
   if (file.exists(here("RDS", trainset, paste0("fit8b", nm_chess, ".RDS")))) {
     fit8b %<-% {
       readRDS(here("RDS", trainset, paste0("fit8b", nm_chess, ".RDS")))
@@ -1031,58 +1201,3 @@ if (FALSE) {
 # }
 #
 
-# run model with future ---------------------------------------------------
-
-
-plan(sequential)
-
-
-# Intensity Prediction ----------------------------------------------------
-
-
-# pts <- st_sf(
-#   geometry = st_sample(bnd,
-#     type = "regular", # regular here because we want to have a accurate and smooth field realisation
-#     size = 300 * 300
-#   ), # either total size, or a numeric vector with sample sizes for each feature geometry.
-#   crs = fm_crs(bnd)
-# )
-
-
-# model not working -------------------------------------------------------
-
-
-
-# The joint mode is not where you wanna have, therefore it does not work
-# if (JU) {
-#   fml3a <- geometry ~ Intercept + landcover + geology + beta_mchi * mchi_field
-#   fml3b <- geometry ~ Intercept + landcover + geology_ + beta_mchi * mchi_field
-# }
-# Have to specify the Cmatrix to make it work
-# if (UP) {
-#   fml3a <- geometry ~ Intercept + landcover + geology + beta_mchi * (mchi_near_ + cov_uncertainty)
-#   fml3b <- logarea_m2 ~ Intercept + landcover_ + geology_ + beta_mchi * (mchi_near_ + cov_uncertainty)
-# }
-if (FALSE) {
-  if (JU) {
-    # this defo not work Finn said
-    mchi <- read.csv(here("data", "lsdtt", fdr, "cop30dem_MChiSegmented.csv"), header = TRUE)
-    mchi_sf <- st_as_sf(mchi, coords = c("longitude", "latitude"), crs = 4326) %>%
-      st_transform(crs = crs_nepal) %>%
-      st_intersection(bnd_out)
-
-    matern <- inla.spde2.pcmatern(mesh_fm,
-      prior.range = c(4, 0.1),
-      prior.sigma = c(2, 0.1)
-    )
-
-    cmp_mchi <- ~ mchi_field(main = geometry, model = matern)
-
-    fml_mchi <- m_chi ~ mchi_field
-
-    lik_mchi <- bru_obs("Gaussian",
-      formula = fml_mchi,
-      data = mchi_sf
-    )
-  }
-}

@@ -1,4 +1,5 @@
-#  This code is to remove landslides in glacier landscape because lsdtopotools needs extra handling for these landslides
+# This code is to remove landslides in glacier landscape because lsdtopotools needs extra handling for these landslides
+# BUT IT IS NO LONGER NEEDED
 # source mchi_zm.R
 # 2228
 
@@ -42,9 +43,43 @@ tile <- maptiles::get_tiles(st_as_sfc(bnd_out), provider = "Esri.WorldImagery", 
 
 ggplot() + geom_spatraster_rgb(data = tile) + 
   geom_sf(data = landslides, col = "red",  size = 0.00005, aes(alpha = log(Area_m2))) +
-  gg(data = bnd, col = "red", fill= "transparent") + guides(alpha = "none")
+  gg(data = bnd, col = "red", fill= "transparent") + guides(alpha = "none")+
+  ggspatial::annotation_scale(location = "tr") +
+  ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+
 ggsave("figures/tile_ldsize.pdf", width = tw/2, height = tw/4)
-ggsave("figures/tile_ldsize.png", width = tw/2, height = tw/4, dpi = 150)
+ggsave("figures/tile_ldsize.png", width = tw/2, height = tw/4, dpi = 100)
+
+ggplot() + geom_spatraster_rgb(data = tile) + 
+  geom_sf(data = landslides, col = "red",  size = 0.00005, aes(alpha = log(Area_m2))) +
+  geom_spatraster_contour_text(data = pga_mean_raster$pga_mean_exp %>% 
+                                 crop(bnd, mask = TRUE), 
+                               breaks = seq(.1, .9, .15),
+                               # breaks = seq(.15, .85, .1),
+                          color = "white") +
+  gg(data = bnd, col = "red", fill= "transparent") + guides(alpha = "none") +
+  geom_sf(data = st_as_sf(epic)[1,] , col = "green", fill = NA, shape = 2, size = 1) +
+  # geom_sf(data = st_as_sf(epic)[2,] , col = "yellow", fill = NA, shape = 2, size = 0.75) +
+  ggspatial::annotation_scale(location = "tr") +
+  ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+ggsave("figures/tile_ldsize_pga_exp_mw78.pdf", width = tw/2, height = tw/4)
+ggsave("figures/tile_ldsize_pga_exp_mw78.png", width = tw/2, height = tw/4, dpi = 150)
+
+
+ggplot() + geom_spatraster_rgb(data = tile) + 
+  geom_sf(data = landslides, col = "red",  size = 0.00005, aes(alpha = log(Area_m2))) +
+  geom_spatraster_contour_text(data = pga_mean_raster_mw73$pga_mean_exp %>% 
+                                 crop(bnd, mask = TRUE), 
+                               breaks = seq(.15, .55, .1),
+                               # breaks = seq(.15, .85, .1),
+                               color = "white") +
+  gg(data = bnd, col = "red", fill= "transparent") + guides(alpha = "none") +
+  # geom_sf(data = st_as_sf(epic)[1,] , col = "green", fill = NA, shape = 2, size = 0.75) +
+  geom_sf(data = st_as_sf(epic)[2,] , col = "yellow", fill = NA, shape = 2, size = 1) +
+  ggspatial::annotation_scale(location = "tr") +
+  ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
+ggsave("figures/tile_ldsize_pga_exp_mw73.pdf", width = tw/2, height = tw/4)
+ggsave("figures/tile_ldsize_pga_exp_mw73.png", width = tw/2, height = tw/4, dpi = 150)
 
 ggplot() + geom_spatraster_rgb(data = tile) + 
   geom_sf(data = landslides_c, col = "red",  size = 0.00005) +
@@ -57,6 +92,7 @@ ggsave("figures/landslides_c_glacier.pdf", width = tw, height = tw/2)
 ggplot() + geom_spatraster_rgb(data = tile) + gg(data = landslides_c_glacier, col = "red", size = 0.01) + 
   gg(data = bnd_out, col = "red", fill = "transparent") +
   scale_fill_viridis_c(na.value = "transparent") 
+ggsave("figures/landslides_c_glacier_tile.png", width = tw, height = tw/2, dpi = 100)
 ggsave("figures/landslides_c_glacier_tile.pdf", width = tw, height = tw/2)
 
 
@@ -104,6 +140,7 @@ ggsave("figures/landslides_c_glacier_zm_fix.pdf", width = tw/3, height = tw/2)
 
 
 p3 + p1 + p2 + plot_layout(widths = c(1, 1, 1),guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom')
+ggsave("figures/landslides_c_glacier_zm_all.png", width = tw, height = tw/2, dpi = 100)
 ggsave("figures/landslides_c_glacier_zm_all.pdf", width = tw, height = tw/2)
 
 # ggspatial::annotation_scale(location = "br") +

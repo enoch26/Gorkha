@@ -1,0 +1,22 @@
+read fname: cop30dem
+write fname: cop30dem
+channel heads fname: NULL
+
+carve_before_fill: true
+
+# We remove parts of the landscape below 250 metres elevation to remove some alluvial fans.
+# minimum_elevation: 250
+# maximum_elevation: 7250
+remove_seas: true
+
+threshold_contributing_pixels: 1000
+minimum_basin_size_pixels: 5000
+maximum_basin_size_pixels: 1000000000
+fixed_channel_csv_name: cop30dem_MChiSegmented.csv
+tag_value_column_string: m_chi
+
+tag_hillslopes_with_channel_values: true
+calculate_topographic_wetness_index: true
+calculate_channel_ridge_relief: true
+
+# end of file

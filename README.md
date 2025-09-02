@@ -29,14 +29,14 @@ This repository documents and references various geospatial datasets used for en
 
 ---
 
-## 🌋 Landslide Inventories
+## Landslide Inventories
 
 ### Valagussa et al. (2021)
 - [Inventory & Bounding Box](https://www.sciencebase.gov/catalog/item/61f040e1d34e8b818adc3251)
 
 ---
 
-## 🟫 Land Cover Data
+## Land Cover Data
 
 **FAO (2021):**  
 _The Himalaya Regional Land Cover Database_  
@@ -61,7 +61,7 @@ _The Himalaya Regional Land Cover Database_
 
 ## Relief Maps
 
-- Internal relief map of the Gorkha Earthquake 2015-affected area (source not specified)
+- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with LSDTopoTools, see `lsdtopotools_driver` folder for scripts and details.
 
 ---
 
@@ -73,7 +73,7 @@ _The Himalaya Regional Land Cover Database_
 
 ## 🗺️ Raster Processing Note
 
-- To fill the gaps caused by buffering between the study area and `Nep_geo.shp`, use the script `nepal_geo_rast_fill.R`. This applies nearest-neighbor interpolation to ensure full coverage in the Gorkha district, making the raster suitable for subsequent spatial analysis.
+- To fill the gaps caused by buffering between the study area and `nep_geo.shp`, use the script `nepal_geo_rast_fill.R`. This applies nearest-neighbor interpolation to ensure full coverage in the Gorkha district, making the raster suitable for subsequent spatial analysis.
 
 ---
 
@@ -88,4 +88,5 @@ _The Himalaya Regional Land Cover Database_
 - [Geometry Operations in R (cubic vs. Lanczos)](https://r.geocompx.org/geometry-operations)
 
 ## R code
-`nepal_geo_rast_fill.R` is a script that fills gaps between Nep_geo.shp and the study area boundary—caused by buffering—using nearest-neighbor values, ensuring complete and consistent geographical data for the Gorkha district for subsequent analysis.
+`compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
+`nepal_geo_rast_fill.R`:fills gaps between Nep_geo.shp and the study area boundary—caused by buffering—using nearest-neighbor values, ensuring complete and consistent geographical data for the Gorkha district for subsequent analysis.

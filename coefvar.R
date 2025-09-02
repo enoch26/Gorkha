@@ -12,7 +12,7 @@ library(patchwork)
     )
   }
   fp_lst_a <- list()
-  pwr <- 2.5
+  pwr <- 3
   sc <- scales::rescale(seq(0,1,length.out = 30)^pwr)
   
   for (j in 1:length(fp_a)) {
@@ -26,7 +26,8 @@ library(patchwork)
           # limits = c(0.5, 1), 
                              values = sc, option = "D") +
         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-        ggtitle(paste0(names(fp_a[j])))
+        # ggtitle(paste0(names(fp_a[j])))
+        ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(fp_a[j]))))
     } else {
       fp_lst_a[[j]] <- ggplot() + gg(fp_a[[j-1]],
                                      # aes(fill = logit_inv(sd/mean)), geom = "tile") + 
@@ -39,7 +40,8 @@ library(patchwork)
                              values = sc, option = "D") +
         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
         labs(fill=expression(c['v']), x="",y="") +
-        ggtitle(paste0(names(fp_a[j-1])))
+        # ggtitle(paste0(names(fp_a[j-1])))
+      ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(fp_a[j-1]))))
     }
   }
   wrap_plots(fp_lst_a[-2], ncol = 2
@@ -48,7 +50,7 @@ library(patchwork)
     plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
   print(paste0(deparse(ff, width.cutoff = 150L)))
   ggsave(paste0("figures/model/", "fp_a", nm_chess, "_cv.pdf"), width = .75*tw, height =  .75*tw)
-  ggsave(paste0("figures/model/", "fp_a", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw)
+  ggsave(paste0("figures/model/", "fp_a", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw, dpi = 150)
   
   fp_b %<-% {
     predict(fit6b,
@@ -69,7 +71,8 @@ library(patchwork)
         scale_fill_viridis_c(values = sc, option = "D") +
         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
         labs(fill=expression(c['v']), x="",y="") +
-        ggtitle(paste0(names(fp_b[j]))) 
+        # ggtitle(paste0(names(fp_b[j])))
+        ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(fp_b[j]))))
     } else {
       fp_lst_b[[j]] <- ggplot() + gg(fp_b[[j-1]],
                                      # aes(fill = logit_inv(sd/mean)), geom = "tile") + 
@@ -81,7 +84,8 @@ library(patchwork)
         scale_fill_viridis_c(values = sc, option = "D") +
         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
         labs(fill=expression(c['v']), x="",y="") +
-        ggtitle(paste0(names(fp_b[j-1])))
+        # ggtitle(paste0(names(fp_b[j-1])))
+        ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(fp_b[j-1]))))
     }
   }
   wrap_plots(fp_lst_b[-2], ncol = 2
@@ -90,7 +94,7 @@ library(patchwork)
     plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
   print(paste0(deparse(ff, width.cutoff = 150L)))
   ggsave(paste0("figures/model/", "fp_b", nm_chess, "_cv.pdf"), width = .75*tw, height =  .75*tw)
-  ggsave(paste0("figures/model/", "fp_b", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw)
+  ggsave(paste0("figures/model/", "fp_b", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw, dpi = 150)
   
   
   # ggplot() +
@@ -130,7 +134,7 @@ if(FALSE){
       plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
     print(paste0(deparse(ff, width.cutoff = 150L)))
     ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_cv.pdf"), width = .75*tw, height =  .75*tw)
-    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw)
+    ggsave(paste0("figures/model/", pred_lst_a[i], nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw, dpi = 150)
   }
 
   

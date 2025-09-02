@@ -1,4 +1,4 @@
-if (FALSE) {
+
   
   landslides_c_ <- st_intersection(landslides_c, landcover)
   landslides_c_ <- landslides_c_[!is.na(landslides_c_$CODE1),]
@@ -8,12 +8,40 @@ if (FALSE) {
   )
   ggplot(df, aes(x = logarea_m2, fill = landcover)) +
     geom_histogram() +
-    labs(y="landslides count", x = "log area (m2)") +
+    labs(y="landslides count", x = expression(paste("log area (", m^{2},")"))) +
     guides(fill=guide_legend(ncol=2))
   # ggsave("figures/landcover_log_hist.png", width = tw, height = tw / 2)
   ggsave("figures/landcover_log_hist.png", width = tw/2, height = tw / 5)
+  
+  df_ <- df %>% mutate(land_cover = substr(landcover, 0, 1))
+  df_$land_cover <- factor(df_$land_cover, 
+                           levels = c("1", "2", "6", "8"),
+                           labels = c("1: Cultivated Crops", 
+                                      "2: Natural Vegetation",
+                                      "6: Rock/Gravel/Stones/Boulders",
+                                      "8: Ice/Snow/Water bodies"))
+  
+  # levels(factor(df_$land_cover)) <- c("Cultivated Crops", 
+  #                                     "Natural Vegetation",
+  #                                     "Rock/Gravel/Stones/Boulders",
+  #                                     "Ice/Snow/Water bodies")
+  if (FALSE) {
+  ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
+    geom_histogram() + 
+    labs(y="landslides count", x = expression(paste("log area (", m^{2},")"))) +
+    guides(fill = "none") + 
+    facet_wrap(vars(land_cover), scales = "free_y", ncol = 1)
+  ggsave("figures/landcover_log_hist_fw.png", width = tw/4, height = tw / 3)
+  
+  ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
+    stat_ecdf() + 
+    labs(y="ecdf", x = expression(paste("log area (", m^{2},")"))) +
+    guides(fill = "none") + 
+    facet_wrap(vars(land_cover))
+  ggsave("figures/landcover_log_ecdf_fw.png", width = tw/2, height = tw / 3)
+  
   ggplot(df %>% filter(landcover %in% c("8SN", "8ICE", "8SNs", "8ICEr")), aes(x = logarea_m2, fill = landcover)) +
-    geom_histogram()
+    geom_histogram() + labs(y="landslides count", x = expression(paste("log area (", m^{2},")"))) +
   ggsave("figures/landcover_ice_hist.png", width = tw, height = tw / 2)
   ggsave("figures/landcover_ice_hist.png", width = tw/2, height = tw / 4)
 }

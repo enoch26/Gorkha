@@ -1,86 +1,24 @@
 # Data --------------------------------------------------------------------
-# Nepal shp
-# https://download.hermes.com.np/nepal-administrative-boundary-wgs/
 
-# Nepal - National Boundary
-# Province Boundary
-# District Boundary
-# Local Level Boundary
-# The administrative boundaries gets updated sometimes so you may as well check Survey Department Geo-portal Site for the updated maps
-# River Network-Line
-# Major River Network-Polygon
-# Settlement Names
-# Settlement Names as published by department of Survey
-# Ward Map
-# https://sites.google.com/view/maze215/Maps/Nepal-Shp
-# https://nationalgeoportal.gov.np/#/dataset
-# landslides
-## Gnyawali and others (2016)
-# https://www.sciencebase.gov/catalog/item/5874a7cee4b0a829a320bb3e
-# https://data.usgs.gov/datacatalog/data/USGS:5874a7cee4b0a829a320bb3e
-# https://www.sciencebase.gov/catalog/item/614512b3d34e0df5fb95b5f9
-# https://www.sciencebase.gov/catalog/item/59cd0585e4b00fa06fefe80a
 ## Valagussa and others (2021)
 # https://www.sciencebase.gov/catalog/item/61f040e1d34e8b818adc3251
 # boundary box
 # https://www.sciencebase.gov/catalog/item/imap/61f040e1d34e8b818adc3251
 
-# landcover
-# error in downloading
-# [DirectoryNotFoundException: Could not find a part of the path 'E:\RDS_Main\BulkDownloads\Nepal_NLCMS\nlcms_2015.zip'.]
-# https://rds.icimod.org/Home/DataDetail?metadataId=1972729
-# https://observablehq.com/@categorise/icimod-land-cover-of-nepal
-
 # Land Cover of Himalaya Region
-# FAO (2021) The Himalaya Regional Land Cover Database: Lancover in Nepal, Bhutan, Afghanistan, Pakistan, India, China and Myanmar. FAO.
+# FAO (2021) The Himalaya Regional Land Cover Database: Landcover in Nepal, Bhutan, Afghanistan, Pakistan, India, China and Myanmar. FAO.
 # hima_lc_npl
 # https://data.apps.fao.org/map/catalog/srv/eng/catalog.search#/metadata/46d3c2ef-72c3-4f96-8e32-40723cd1847b
-# https://storage.googleapis.com/fao-maps-catalog-data/geonetwork/landcover/hima_lc_npl.zip
 
-# geology
-# https://www.sciencebase.gov/catalog/item/60c3b89fd34e86b93897ef19
-# considering buy a proper geology map
-# https://dmgnepal.gov.np/en/resources/province-and-regional-geological-maps-6665
-# even ESCAP map back in 1993 is better than the current one
-# https://repository.unescap.org/handle/20.500.12870/4866
-# Geological data of Nepal's Gorkha Earthquake 2015 affected area
-# https://rds.icimod.org/Home/DataDetail?metadataId=24676&searchlist=True
-
+# Geology
+# https://www.researchgate.net/publication/259636889_Regional-scale_landslide_activity_and_landslide_susceptibility_zonation_in_the_Nepal_Himalaya
 
 # DEM
 # https://opentopography.org/news/updated-copernicus-30m-DEM-available
-# https://github.com/mlampros/CopernicusDEM
-# https://doi.org/10.5069/G9028PQB
-# Elevation Zones of Nepal
-# https://rds.icimod.org/Home/DataDetail?metadataId=834&searchlist=True
 
-# waterbody
-# Water Bodies 2014-2020 (raster 300 m), global, 10-daily – version 1 - Geotiff (NUTS: NP)
-# raster on 24 April 2015, Nepal earthquake that took place on 25 April 2015
-# https://land.copernicus.eu/en/products/water-bodies/water-bodies-global-v1-0-300m
-# Nepal Watercourses - Rivers
-# Time Period of the Dataset [?]
-# January 01, 2001-January 01, 2001
-# https://data.humdata.org/dataset/nepal-watercourses-rivers
-# MERIT Hydro: Global Hydrography Datasets
-# https://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_Hydro/
-# https://water.usgs.gov/catalog/datasets/05199160-2947-404d-bac7-ba6aed53a96e/
-
-# Internal Relief Map of Nepal's Gorkha Earthquake 2015 affected area
-
-
-# Soil water index
-# Soil Water Index 2007-present (raster 12.5 km), global, 10-daily – version 3 - Netcdf (NUTS: NP)
-# Soil Water Index 2007-present (raster 12.5 km), global, daily – version 3 - Netcdf (NUTS: NP)
-
-
-# try out this dataset with bigger coverage
-# TODO https://www.sciencebase.gov/catalog/item/582c74fbe4b04d580bd377e8
-
-# cubic vs lanczos
-# https://r.geocompx.org/geometry-operations
-
-
+# rainfall
+# https://data.humdata.org/dataset/nepal-historical-annual-and-monthly-rainfall-distribution-for-monsoon-months
+# https://www.chc.ucsb.edu/data/chirps3
 # set global var ----------------------------------------------------------
 
 if(CV_chess){
@@ -134,9 +72,6 @@ library(terra)
 library(tidyterra)
 library(future)
 
-# fasterRaster::fillNA vs terra::interpNear
-# https://r-packages.io/packages/fasterRaster/fillNAs
-
 # Set the number of threads for parallel processing
 gdalraster::set_config_option("GDAL_NUM_THREADS", "10")
 # setGDALconfig("GDAL_NUM_THREADS=10")
@@ -149,6 +84,28 @@ source(here("function.R"))
 # nepal boundary and landslides bbox  -------------------------------------
 
 source(here("nepal_bnd.R"))
+
+if(file.exists("data/rainfall.tif")) {
+  rainfall <- rast("data/rainfall.tif") %>%
+    crop(bnd_out, mask = TRUE)
+} else {
+  rainfall <- rast("data/chirps-v3.0.annual.nc") %>%
+    project(crs_nepal$input, threads = TRUE) %>%
+    crop(bnd_out, mask = TRUE)
+  writeRaster(rainfall, "data/rainfall.tif")
+}
+
+rainfall$precip_2015 <- rainfall$precip_35/1000 # mm to m
+
+# annual rainfall data from 1981 and 2015 is what im looking for
+# rainfall$precip_35 
+
+su_hima <- st_read("data/su_himalaya-gpkg/su_himalaya.gpkg") %>%
+  st_transform(crs = crs_nepal) %>% # to UTM
+  st_intersection(bnd_out)
+
+su_hima$cluster_su_A <- as.factor(su_hima$cluster_su_A)
+su_hima$cluster_su_B <- as.factor(su_hima$cluster_su_B)
 
 landcover %<-% {
   st_read(
@@ -254,33 +211,45 @@ if (FALSE) {
 #                          ref = "1HSs") # TODO oringially 2TCOne//2TCObe
 
 # data format and source
+# mw7.8 25 April 2015
+# https://earthquake.usgs.gov/earthquakes/eventpage/us20002926/shakemap/pgv
 # https://cbworden.github.io/shakemap/manual4_0/ug_products.html
 # The units (except for MMI, which is expressed in linear units) are the natural logarithm of the physical units: for acceleration that is ln(g) and for velocity the units are ln(cm/s).
+
+e <- ext(84, 89, 27, 29)
 pga_mean_raster <-
   rast(here(
     "data", "raster", "pga_mean.flt"
-  )) %>%
-  project(crs_nepal$input) %>%
-  crop(bnd_out, mask = TRUE)
+  )) %>%  crop(e)
+# %>% project(crs_nepal$input) %>%  crop(bnd_out, mask = TRUE)
 
+# mw7.3 12 May 2015
+# https://earthquake.usgs.gov/earthquakes/eventpage/us20002ejl/shakemap/pga
+# different resolution from pga_mean_raster for some reasons
+pga_mean_raster_mw73 <-
+  rast(here(
+    "data", "mw73", "raster", "pga_mean.flt"
+  ))  
 
-# After looking into the variance, it is not sure if it is systematic or local error
-# otherwise Cmatrix generic0 to incorporate uncertainty would work
-# pga_std_raster <-
-#   rast(here(
-#     "data", "raster", "pga_std.flt"
-#   )) %>%
-#   project(crs_nepal$input) %>%
-#   crop(bnd_out, mask = TRUE)
-ggplot() + geom_spatraster(data = pga_std_raster) +
-  geom_sf(data = bnd, fill = NA, col = "red") +
-  scale_fill_viridis_c(option = "D") +
-  ggtitle("PGA std")
-ggsave("figures/pga_std.png", width = tw, height = tw / 2)
+# to align the extent and resolution of pga_mean_raster for operation, the shift is essential and negligible compared to the extent of pga_mean_raster
+pga_mean_raster_mw73 <- aggregate(pga_mean_raster_mw73, 2) %>%  crop(pga_mean_raster) %>% shift(dx=-.00417, dy=.00416)
+
+# sum the two rasters up
+pga_mean_raster_merge <- pga_mean_raster - pga_mean_raster_mw73
+pga_mean_raster <- pga_mean_raster %>% project(crs_nepal$input) %>%  crop(bnd_out, mask = TRUE)
+pga_mean_raster_merge <- pga_mean_raster_merge %>% project(crs_nepal$input) %>%  crop(bnd_out, mask = TRUE)
+pga_mean_raster_mw73 <- pga_mean_raster_mw73 %>% project(crs_nepal$input) %>%  crop(bnd_out, mask = TRUE)
+# %>% project(crs_nepal$input) %>%  crop(bnd_out, mask = TRUE)
 
 # revert back to original scale
 pga_mean_raster$pga_mean_exp <- exp(pga_mean_raster$pga_mean)
-# pga_std_raster$pga_std_exp <- exp(pga_std_raster$pga_std)
+pga_mean_raster_merge$pga_mean_exp <- exp(pga_mean_raster_merge$pga_mean)
+pga_mean_raster_mw73$pga_mean_exp <- exp(pga_mean_raster_mw73$pga_mean)
+
+# other option is to resample 
+# pga_mean_raster_mw73$pga_mean_mw78 <- as.numeric(extract(pga_mean_raster$pga_mean, as.points(pga_mean_raster_mw73)))
+# pga_mean_raster_mw73$pga_mean_mw78 <- resample(pga_mean_raster_mw73, pga_mean_raster, "bilinear")
+
 
 # https://www.nature.com/articles/s43247-024-01822-9
 # The 2015 Nepal earthquake generated peak ground accelerations (PGA) ranging from 0.1 g to 0.5 g
@@ -343,120 +312,12 @@ if (file.exists(here("data", "cop30dem.tif"))) {
 
   writeRaster(dem, here("data", "cop30dem.tif"), overwrite = TRUE)
 }
-if (FALSE) {
-  dem <- rast(here("data", "lsdtt", "lanczos_", "cop30dem.bil")) %>%
-    project(crs_nepal$input) %>%
-    crop(bnd_out, mask = TRUE)
-  flowdir <- terrain(dem, "flowdir")
-  weight <- cellSize(dem, unit = "km")
-  flowacc_weight <- flowAccumulation(flowdir, weight)
-  flowacc <- flowAccumulation(flowdir)
-  flowacc$logflowdir <- log(flowacc)
-  ggplot() +
-    geom_spatraster(data = flowacc["logflowdir"]) +
-    scale_fill_viridis_c(na.value = "transparent")
-  ggsave("flowacc.pdf",
-    width = tw,
-    height = tw / 2
+
+dem_terrain_mask <-
+  terrain(dem$dem_km,
+          v = "slope", unit = "radians",
+          neighbors = 8
   )
-
-  crit <- c("slope", "aspect", "roughness", "flowdir")
-  # , "TPI", "TRIriley", "TRIrmsd")
-
-  if (file.exists(here("data", "dem_terrain_mask.tif"))) {
-    dem_terrain_mask <- rast(here("data", "dem_terrain_mask.tif")) %>%
-      project(crs_nepal$input) %>%
-      crop(bnd_out, mask = TRUE)
-  } else {
-    dem_terrain_mask <-
-      terrain(dem$dem_km,
-        v = crit, unit = "radians",
-        neighbors = 8
-      )
-    # https://rspatial.org/pkg/5-methods.html
-    rclmat <- seq(0, 2 * pi, length.out = 37)
-    dem_terrain_mask$asp_gp <-
-      classify(dem_terrain_mask$aspect, rclmat, include.lowest = TRUE)
-
-    writeRaster(dem_terrain_mask, here("data", "dem_terrain_mask.tif"))
-  }
-
-
-
-  # even kernel with larger radius
-  # norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)}
-
-  if (file.exists(here("data", "dem_terrain_focal.tif")) &&
-    file.exists(here("data", "dem_terrain_focal2.tif"))) {
-    dem_terrain_focal <- rast(here("data", "dem_terrain_focal.tif")) %>%
-      project(crs_nepal$input) %>%
-      crop(bnd_out, mask = TRUE)
-    dem_terrain_focal2 <- rast(here("data", "dem_terrain_focal2.tif")) %>%
-      project(crs_nepal$input) %>%
-      crop(bnd_out, mask = TRUE)
-  } else {
-    dem_terrain_mask_ <-
-      terrain(dem$dem_km,
-        v = "slope", unit = "radians",
-        neighbors = 4
-      )
-
-    # TODO I reckon the grad easting and northing should be swapped and without negative sign
-    dem_terrain_mask_$grad_easting <-
-      -sin(dem_terrain_mask$aspect) * tan(dem_terrain_mask$slope)
-
-    dem_terrain_mask_$grad_northing <-
-      -cos(dem_terrain_mask$aspect) * tan(dem_terrain_mask$slope)
-
-    # here the kernel is a weight matrix, eg 1,2,4,2,1 convolution matrix, discrete roughly circular
-    norm_kernel2 <- norm_kernel <- gkernel(matrix(1, 2, 2), norm = TRUE) # radius 3*30 / 2 = 45 m
-    stack_times <- 10 # TODO should be larger than mesh size, or do subdivide mesh into 9
-
-    for (i in 1:(stack_times / 2)) {
-      norm_kernel <- gkernel(norm_kernel, norm = TRUE)
-    }
-    # radius # col of matrix *30/2 =75 m
-    for (i in 1:stack_times) {
-      norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)
-    }
-
-    dem_terrain_focal <- focal(dem_terrain_mask_,
-      w = norm_kernel, fun = sum
-    )
-    dem_terrain_focal2 <- focal(dem_terrain_mask_,
-      w = norm_kernel2, fun = sum
-    )
-
-    # dem_terrain_focal$relief <- sqrt(dem_terrain_mask$grad_easting^2 + dem_terrain_mask$grad_northing^2) I did use mask during the meeting but is it mask or focal?
-    dem_terrain_focal$relief <- sqrt(dem_terrain_focal$grad_easting^2 + dem_terrain_focal$grad_northing^2)
-    dem_terrain_focal2$relief <- sqrt(dem_terrain_focal2$grad_easting^2 + dem_terrain_focal2$grad_northing^2)
-
-    writeRaster(dem_terrain_focal, here("data", "dem_terrain_focal.tif"))
-    writeRaster(dem_terrain_focal2, here("data", "dem_terrain_focal2.tif"))
-  }
-
-
-  # nepal
-  # curvature/twi/spi/tri/distance to river/stream sediment transport index(STI)
-  # https://www.esri.com/arcgis-blog/products/product/imagery/understanding-curvature-rasters/
-  # https://www.rdocumentation.org/packages/spatialEco/versions/2.0-2/topics/curvature
-  if (file.exists(here("data", "dem_curvature.tif"))) {
-    crv_planform <- rast(here("data", "crv_planform.tif")) %>%
-      project(crs_nepal$input)
-    crv_profile <- rast(here("data", "crv_profile.tif")) %>%
-      project(crs_nepal$input)
-  } else {
-    crv_planform <- spatialEco::curvature(dem$dem_km, type = "planform") %>%
-      rename(crv_planform = dem_km)
-    crv_profile <- spatialEco::curvature(dem$dem_km, type = "profile") %>%
-      rename(crv_profile = dem_km)
-    # varnames(crv) <- "crv"
-    # longnames(crv) <- "curvature"
-    writeRaster(crv_planform, here("data", "crv_planform.tif"), overwrite = TRUE)
-    writeRaster(crv_profile, here("data", "crv_profile.tif"), overwrite = TRUE)
-  }
-}
-# crv <- curvature(dem$dem_km, type = "platform")
 
 # geology
 
@@ -621,3 +482,139 @@ source("pxl.R")
 #   )
 # }
 plan(sequential)
+
+
+  # After looking into the variance, it is not sure if it is systematic or local error
+  # otherwise Cmatrix generic0 to incorporate uncertainty would work
+  # pga_std_raster <-
+  #   rast(here(
+  #     "data", "raster", "pga_std.flt"
+  #   )) %>%
+  #   project(crs_nepal$input) %>%
+  #   crop(bnd_out, mask = TRUE)
+  # ggplot() + geom_spatraster(data = pga_std_raster) +
+  #   geom_sf(data = bnd, fill = NA, col = "red") +
+  #   scale_fill_viridis_c(option = "D") +
+  #   ggtitle("PGA std")
+  # ggsave("figures/pga_std.png", width = tw, height = tw / 2)
+  
+  
+  
+  # pga_std_raster$pga_std_exp <- exp(pga_std_raster$pga_std)
+  
+  
+  if (FALSE) {
+    dem <- rast(here("data", "lsdtt", "lanczos_", "cop30dem.bil")) %>%
+      project(crs_nepal$input) %>%
+      crop(bnd_out, mask = TRUE)
+    flowdir <- terrain(dem, "flowdir")
+    weight <- cellSize(dem, unit = "km")
+    flowacc_weight <- flowAccumulation(flowdir, weight)
+    flowacc <- flowAccumulation(flowdir)
+    flowacc$logflowdir <- log(flowacc)
+    ggplot() +
+      geom_spatraster(data = flowacc["logflowdir"]) +
+      scale_fill_viridis_c(na.value = "transparent")
+    ggsave("flowacc.pdf",
+           width = tw,
+           height = tw / 2
+    )
+    
+    crit <- c("slope", "aspect", "roughness", "flowdir")
+    # , "TPI", "TRIriley", "TRIrmsd")
+    
+    if (file.exists(here("data", "dem_terrain_mask.tif"))) {
+      dem_terrain_mask <- rast(here("data", "dem_terrain_mask.tif")) %>%
+        project(crs_nepal$input) %>%
+        crop(bnd_out, mask = TRUE)
+    } else {
+      dem_terrain_mask <-
+        terrain(dem$dem_km,
+                v = crit, unit = "radians",
+                neighbors = 8
+        )
+      # https://rspatial.org/pkg/5-methods.html
+      rclmat <- seq(0, 2 * pi, length.out = 37)
+      dem_terrain_mask$asp_gp <-
+        classify(dem_terrain_mask$aspect, rclmat, include.lowest = TRUE)
+      
+      writeRaster(dem_terrain_mask, here("data", "dem_terrain_mask.tif"))
+    }
+    
+    
+    
+    # even kernel with larger radius
+    # norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)}
+    
+    if (file.exists(here("data", "dem_terrain_focal.tif")) &&
+        file.exists(here("data", "dem_terrain_focal2.tif"))) {
+      dem_terrain_focal <- rast(here("data", "dem_terrain_focal.tif")) %>%
+        project(crs_nepal$input) %>%
+        crop(bnd_out, mask = TRUE)
+      dem_terrain_focal2 <- rast(here("data", "dem_terrain_focal2.tif")) %>%
+        project(crs_nepal$input) %>%
+        crop(bnd_out, mask = TRUE)
+    } else {
+      dem_terrain_mask_ <-
+        terrain(dem$dem_km,
+                v = "slope", unit = "radians",
+                neighbors = 4
+        )
+      
+      # TODO I reckon the grad easting and northing should be swapped and without negative sign
+      dem_terrain_mask_$grad_easting <-
+        -sin(dem_terrain_mask$aspect) * tan(dem_terrain_mask$slope)
+      
+      dem_terrain_mask_$grad_northing <-
+        -cos(dem_terrain_mask$aspect) * tan(dem_terrain_mask$slope)
+      
+      # here the kernel is a weight matrix, eg 1,2,4,2,1 convolution matrix, discrete roughly circular
+      norm_kernel2 <- norm_kernel <- gkernel(matrix(1, 2, 2), norm = TRUE) # radius 3*30 / 2 = 45 m
+      stack_times <- 10 # TODO should be larger than mesh size, or do subdivide mesh into 9
+      
+      for (i in 1:(stack_times / 2)) {
+        norm_kernel <- gkernel(norm_kernel, norm = TRUE)
+      }
+      # radius # col of matrix *30/2 =75 m
+      for (i in 1:stack_times) {
+        norm_kernel2 <- gkernel(norm_kernel2, norm = TRUE)
+      }
+      
+      dem_terrain_focal <- focal(dem_terrain_mask_,
+                                 w = norm_kernel, fun = sum
+      )
+      dem_terrain_focal2 <- focal(dem_terrain_mask_,
+                                  w = norm_kernel2, fun = sum
+      )
+      
+      # dem_terrain_focal$relief <- sqrt(dem_terrain_mask$grad_easting^2 + dem_terrain_mask$grad_northing^2) I did use mask during the meeting but is it mask or focal?
+      dem_terrain_focal$relief <- sqrt(dem_terrain_focal$grad_easting^2 + dem_terrain_focal$grad_northing^2)
+      dem_terrain_focal2$relief <- sqrt(dem_terrain_focal2$grad_easting^2 + dem_terrain_focal2$grad_northing^2)
+      
+      writeRaster(dem_terrain_focal, here("data", "dem_terrain_focal.tif"))
+      writeRaster(dem_terrain_focal2, here("data", "dem_terrain_focal2.tif"))
+    }
+    
+    
+    # nepal
+    # curvature/twi/spi/tri/distance to river/stream sediment transport index(STI)
+    # https://www.esri.com/arcgis-blog/products/product/imagery/understanding-curvature-rasters/
+    # https://www.rdocumentation.org/packages/spatialEco/versions/2.0-2/topics/curvature
+    if (file.exists(here("data", "dem_curvature.tif"))) {
+      crv_planform <- rast(here("data", "crv_planform.tif")) %>%
+        project(crs_nepal$input)
+      crv_profile <- rast(here("data", "crv_profile.tif")) %>%
+        project(crs_nepal$input)
+    } else {
+      crv_planform <- spatialEco::curvature(dem$dem_km, type = "planform") %>%
+        rename(crv_planform = dem_km)
+      crv_profile <- spatialEco::curvature(dem$dem_km, type = "profile") %>%
+        rename(crv_profile = dem_km)
+      # varnames(crv) <- "crv"
+      # longnames(crv) <- "curvature"
+      writeRaster(crv_planform, here("data", "crv_planform.tif"), overwrite = TRUE)
+      writeRaster(crv_profile, here("data", "crv_profile.tif"), overwrite = TRUE)
+    }
+  }
+  # crv <- curvature(dem$dem_km, type = "platform")
+  

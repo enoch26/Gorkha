@@ -84,6 +84,18 @@ if (to_plot) {
   ggsave(here("figures", "nepal_litho.pdf"), width = tw, height = tw / 2)
 }
 
+# ksn ---------------------------------------------------------------------
+
+
+p_ksn <- ggplot() +
+  geom_spatraster(data = log_ksn_tag, aes(fill = cop30dem_channel_tagged_pixels)) +
+  labs(fill = "log_ksn") +
+  # geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.1) +
+  geom_sf(data = bnd, col = "red", fill = NA) +
+  scale_fill_viridis_c(na.value = "transparent") 
+# geom_sf(data = bnd_out, col = "red", fill = NA)
+p_ksn
+ggsave(here("figures", "nepal_log_ksn.png"), width = tw/2, height = tw / 4)
 
 ## terrain -----------------------------------------------------------------
 
@@ -268,14 +280,14 @@ if (to_plot) {
     geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1)
   ggsave(here("figures", "nepal_geo.pdf"), width = tw, height = tw / 2)
 
-  p_landuse <- ggplot() +
-    geom_sf(data = landuse, aes(fill = CODE1)) +
-    geom_sf(data = bnd, col = "red", fill = NA) +
-    geom_sf(data = bnd_out, col = "red", fill = NA) 
+  p_landcover <- ggplot() +
+    geom_sf(data = landcover, aes(fill = CODE1)) +
+    geom_sf(data = bnd, col = "red", fill = NA) 
+    # geom_sf(data = bnd_out, col = "red", fill = NA) 
     # geom_sf(data = landslides_c, aes(col = log(Area_m2)), size = 0.1, alpha = 0.5)
-    p_landuse
+    p_landcover
   ggsave(here("figures", "nepal_landuse.pdf"), width = tw, height = tw / 2)
-  ggsave(here("figures", "nepal_landuse.png"), width = tw, height = tw / 2)
+  ggsave(here("figures", "nepal_landuse.png"), width = tw/2, height = tw / 4)
   ggsave(here("figures", "nepal_landuse.jpg"), width = tw, height = tw / 2)
 }
 
