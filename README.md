@@ -52,7 +52,7 @@ _The Himalaya Regional Land Cover Database_
 
 ## Relief Maps
 
-- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with LSDTopoTools (https://lsdtopotools.github.io/), see `lsdtopotools_driver` folder for scripts and details.
+- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with [LSDTopoTools](https://lsdtopotools.github.io/), see `lsdtopotools_driver` folder for scripts and details.
 
 ---
 
@@ -69,8 +69,8 @@ _The Himalaya Regional Land Cover Database_
 ---
 ## R code
 
--`compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
--`tile_ldsize.R`: Plots the landslide inventory with PGA contour lines and histogram for landslides. 
--`mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
--`pred_zm.R`: Plots the posterior susceptibility map zoom-out.
--`coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
+- `compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
+- `tile_ldsize.R`: Plots the landslide inventory with PGA contour lines and histogram for landslides. 
+- `mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
+- `pred_zm.R`: Plots the posterior susceptibility map zoom-out.
+- `coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
