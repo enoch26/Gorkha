@@ -69,7 +69,7 @@ _The Himalaya Regional Land Cover Database_
 ---
 ## R code
 
-- `compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis.
+- `compiler.R`: compiles and processes various geospatial datasets into a unified format for analysis and INLA spatial modelling.
 - `tile_ldsize.R`: Plots the landslide inventory with PGA contour lines and histogram for landslides. 
 - `mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
 - `pred_zm.R`: Plots the posterior susceptibility map zoom-out.
