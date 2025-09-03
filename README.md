@@ -74,3 +74,15 @@ _The Himalaya Regional Land Cover Database_
 - `mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
 - `pred_zm.R`: Plots the posterior susceptibility map zoom-out.
 - `coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
+
+---
+## Citation
+
+For attribution, please cite this work as: Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2025). Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru. arXiv preprint arXiv:2507.08742.
+
+@article{suen2025influence,
+  title={Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru},
+  author={Suen, Man Ho and Naylor, Mark and Mudd, Simon and Lindgren, Finn},
+  journal={arXiv preprint arXiv:2507.08742},
+  year={2025}
+}
