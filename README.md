@@ -5,7 +5,7 @@
 
 This repository documents and references various geospatial datasets used for earthquake-induced landslide (EQIL) modelling in Nepal for Gorkha Earthquake. Data includes administrative boundaries, geology, elevation, land cover, rainfall, and landslide inventories.
 
-> **Note:** Some administrative boundaries and datasets are updated periodically. Always verify the latest versions via official portals (e.g., Nepal Survey Department, ICIMOD, USGS, FAO, etc.).
+> **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
 
 ---
 
