@@ -6,13 +6,16 @@
 # Sys.sleep(43200)
 
 # GRID CV-------------------------------------------------------------------
+
+## white gridCV ------------------------------------------------------------
 train <- "white"
 cv_chess_resol <- c(3, 3)
 CV_thin <- FALSE; CV_chess <- TRUE
 trainset <- ""
 source("read_data.R");source("model.R");source("score.R");source("compute_time.R");q()
 
-Sys.sleep(20000)
+# Sys.sleep(20000)
+## black gridCV ------------------------------------------------------------
 train <- "black"
 cv_chess_resol <- c(3, 3)
 CV_thin <- FALSE; CV_chess <- TRUE
@@ -42,8 +45,8 @@ source("read_data.R");source("model.R");source("score.R"); source("compute_time.
 # source("read_data.R");source("model.R");source("score.R");q()
 
 # THINNING CV ----------------------------------------------------------------
-
-Sys.sleep(3600)
+# either choose thinA or thinB for trainset
+# Sys.sleep(3600)
 CV_thin <- TRUE; CV_chess <- FALSE
 trainset <- "thinA" # "thinA" or "thinB"
 # trainset <- "thinB"
