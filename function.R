@@ -276,25 +276,35 @@ score <- function(object,
   # ))
   
   if(is.null(cv_grid)){
-    formula <- as.formula(paste(
-      paste0(" ~ { expect <-  ", ff),
-      "\n",
-      "variance <- 1/Precision_for_the_Gaussian_observations",
-      "\n",
-      paste0(
-        "list(expect = expect, obs_prob = dnorm(", get(obs, newdata),
-        ", mean = expect, sd = sqrt(variance)))}"
+    if(ff == "Intercept"){
+      formula <- as.formula(paste(
+        paste0(" ~ { expect <- ", ff),
+        "\n",
+        "variance <- 1/Precision_for_the_Gaussian_observations",
+        "\n",
+        paste0(
+          "list(expect = expect, variance = variance, obs_prob = dnorm(",
+          "get(obs, newdata)",
+          ", mean = rep(expect,", nrow(newdata), ")", 
+          ", sd = rep(sqrt(variance),", nrow(newdata), ")))}"
+        )
       )
-    )
-    )
-    # formula <- as.formula(paste(
-    #   paste0(" ~ { expect <-  ", ff), 
-    #   "\n",
-    #   paste0(
-    #     "list(expect = expect)}"
-    #   )
-    # )
-    # )
+      )
+    } else { 
+      formula <- as.formula(paste(
+        paste0(" ~ { expect <-  ", ff),
+        "\n",
+        "variance <- 1/Precision_for_the_Gaussian_observations",
+        "\n",
+        paste0(
+          "list(expect = expect, variance = variance, obs_prob = dnorm(",
+          "get(obs, newdata)",
+          ", mean = expect, sd = sqrt(variance)))}"
+        )
+      )
+      )
+      
+      }
     
     pred <- predict(object,
                     newdata = newdata, formula = formula,
@@ -307,15 +317,18 @@ score <- function(object,
     # post_median <- get("median", pred$expect)
     post_Var <- post_E + (get("sd", pred$expect))^2 # because of conditional 
     
-    
+    # the correct way to compute AE
     # pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_median)
-    pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_E)
-    pred$obs_prob$SE <- SE <- (get(obs, newdata) - post_E)^2
-    pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
-    # TODO log score
-    pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
-    pred$obs_prob$LS_upper <- LS_upper <- -log(pred$obs_prob$mean - 2*pred$obs_prob$mean.mc_std_err)
-    pred$obs_prob$LS_lower <- LS_lower <- -log(pred$obs_prob$mean + 2*pred$obs_prob$mean.mc_std_err)
+    if(ff == "Intercept"){
+      pred$obs_prob <- lapply(pred$obs_prob, function(el) rep(el, length(get(obs, newdata))))
+    }
+      pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_E)
+      pred$obs_prob$SE <- SE <- (get(obs, newdata) - post_E)^2
+      pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
+      pred$obs_prob$LS <- LS <- -log(pred$obs_prob$mean)
+      pred$obs_prob$LS_upper <- LS_upper <- -log(pred$obs_prob$mean - 2*pred$obs_prob$mean.mc_std_err)
+      pred$obs_prob$LS_lower <- LS_lower <- -log(pred$obs_prob$mean + 2*pred$obs_prob$mean.mc_std_err)
+    
   }else{
     # Poisson point pattern
     agg_nc <- bru_mapper_logsumexp(rescale = FALSE)
@@ -330,7 +343,7 @@ score <- function(object,
       # "\n",
       paste0(
         # "list(expect = expect)}"
-        "list(expect = expect, obs_prob = dpois(", get(obs, cv_grid), ", lambda = expect))}"
+        "list(expect = expect, obs_prob = dpois(", "get(obs, cv_grid)", ", lambda = expect))}"
         # "list(expect = expect, obs_prob = dpois(", obs , "lambda = expect))}"
       )
     )
@@ -354,8 +367,6 @@ score <- function(object,
     # pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_median)
     pred$obs_prob$AE <- AE <- abs(get(obs, cv_grid) - post_E)
     pred$obs_prob$SE <- SE <- (get(obs, cv_grid) - post_E)^2
-    
-    
     pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
     # log score
     # pred$obs_prob$LS <- LS <- -log(dpois(get(obs, cv_grid), lambda = post_E))
