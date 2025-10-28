@@ -1,6 +1,13 @@
 # Modelling ---------------------------------------------------------------
 library(future)
 
+# create RDS folder to store results
+
+if (!file.exists(here("RDS"))) {
+  dir.create(here("RDS"))
+}
+
+
 min_log_ksn_tag_rw2 <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[1]
 max_log_ksn_tag_rw2 <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[2]
 knots <- seq(0, max_log_ksn_tag_rw2, length = 25)
