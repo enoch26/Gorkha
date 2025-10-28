@@ -259,10 +259,12 @@ fml4a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + slop
 fml4b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + slope + rainfall
 
 fml5a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + rf2ch_inv + rainfall_rw2
-fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster +landcover_ + geology_ + rf2ch + rainfall
+# fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster +landcover_ + geology_ + rf2ch + rainfall
+fml5b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2 + rainfall + rf2ch
 
 fml6a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2 + fd2ch_inv + rainfall_rw2
-fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + fd2ch + rainfall
+# fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + fd2ch + rainfall
+fml6b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2 + rainfall + fd2ch
 
 lik1a %<-% {
   bru_obs(

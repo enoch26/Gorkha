@@ -94,6 +94,7 @@ bnd <- st_as_sf(st_difference(
 
 # clean up the boudnary mismatch bit
 bnd <- bnd[1, ]
+st_geometry(bnd) <- "geometry"
 
 bnd_out <- st_cast(
   st_sf(geometry = fm_nonconvex_hull(bnd, 2.5)),

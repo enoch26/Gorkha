@@ -415,7 +415,6 @@ if (CV_thin) {
  
     # cv_newdata <- cv_newdata %>% left_join(data.frame(cv_grid %>% st_drop_geometry() %>% select(.block, count, count_test)),
     #   by = ".block")
-    # 20250721 from R450 onwards has a problem of cv_grid has more rows than pred from agg_mapper from cv_newdata
     f1a_score <- {
       score(fit1a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 10, seed = seed)
     }
