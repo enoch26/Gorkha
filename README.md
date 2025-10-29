@@ -112,5 +112,27 @@ time zone: Etc/UTC
 tzcode source: system (glibc)
 
 attached base packages:
-[1] stats     graphics  grDevices utils     datasets  methods   base  
+[1] stats     graphics  grDevices utils     datasets  methods   base 
+
+other attached packages:
+ [1] future_1.58.0       tidyterra_0.7.2     terra_1.8-54       
+ [4] ggplot2_3.5.2       here_1.0.1          inlabru_2.13.0.9009
+ [7] INLA_25.08.29       Matrix_1.7-3        fmesher_0.5.0.9004 
+[10] stars_0.6-8         sf_1.0-21           abind_1.4-8        
+[13] dplyr_1.1.4        
+
+loaded via a namespace (and not attached):
+ [1] generics_0.1.4     tidyr_1.3.1        xml2_1.3.8         class_7.3-23      
+ [5] KernSmooth_2.23-26 stringi_1.8.7      lattice_0.22-7     listenv_0.9.1     
+ [9] digest_0.6.37      magrittr_2.0.3     grid_4.5.1         RColorBrewer_1.1-3
+[13] nanoarrow_0.6.0-1  rprojroot_2.0.4    e1071_1.7-16       DBI_1.2.3         
+[17] gdalraster_2.0.0   purrr_1.0.4        scales_1.4.0       codetools_0.2-20  
+[21] cli_3.6.5          rlang_1.1.6        units_0.8-7        parallelly_1.44.0 
+[25] bit64_4.6.0-1      splines_4.5.1      withr_3.0.2        tools_4.5.1       
+[29] parallel_4.5.1     globals_0.18.0     vctrs_0.6.5        R6_2.6.1          
+[33] proxy_0.4-27       lifecycle_1.0.4    classInt_0.4-11    stringr_1.5.1     
+[37] bit_4.6.0          pkgconfig_2.0.3    pillar_1.10.2      gtable_0.3.6      
+[41] glue_1.8.0         Rcpp_1.0.14        splancs_2.01-45    tibble_3.3.0      
+[45] tidyselect_1.2.1   dichromat_2.0-0.1  farver_2.1.2       wk_0.9.4          
+[49] compiler_4.5.1     sp_2.2-0          
 ```
