@@ -138,6 +138,8 @@ landslides %<-% {
 
 landslides_c <- st_centroid(landslides) %>% st_intersection(bnd)
 
+st_geometry(landslides_c) <- "geometry"
+
 # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels_near.tif")) %>%
 ksn_tag <- rast(here("data", "ksn_tag_near.tif")) %>%
   # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
