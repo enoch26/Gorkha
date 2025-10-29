@@ -9,19 +9,19 @@
 # Code to run Grid CV, run each section chunk separately
 ## white gridCV ------------------------------------------------------------
 train <- "white"
-# cv_chess_resol <- c(5, 5)
-cv_chess_resol <- c(3, 3)
+cv_chess_resol <- c(5, 5)
+# cv_chess_resol <- c(3, 3)
 CV_thin <- FALSE; CV_chess <- TRUE
-trainset <- ""
+trainset <- "grid"
 source("read_data.R");source("model.R");source("score.R");source("compute_time.R");q()
 
 # Sys.sleep(20000)
 ## black gridCV ------------------------------------------------------------
-Sys.sleep(3600)
+# Sys.sleep(3600)
 train <- "black"
 cv_chess_resol <- c(3, 3)
 CV_thin <- FALSE; CV_chess <- TRUE
-trainset <- ""
+trainset <- "grid"
 source("read_data.R");source("model.R");source("score.R"); source("compute_time.R");q()
 
 

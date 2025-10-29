@@ -7,6 +7,10 @@ if (!file.exists(here("RDS"))) {
   dir.create(here("RDS"))
 }
 
+if (!file.exists(here("RDS", trainset))) {
+  dir.create(here("RDS", trainset))
+}
+
 
 min_log_ksn_tag_rw2 <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[1]
 max_log_ksn_tag_rw2 <- minmax(log_ksn_tag$cop30dem_channel_tagged_pixels)[2]
