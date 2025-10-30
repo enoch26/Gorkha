@@ -6,6 +6,11 @@ sc <- seq(0, 1, length.out = 20)
 mod_names_a <- ls(pattern = "fit.a")
 mod_names_b <- ls(pattern = "fit.b")
 
+path <- here("figures", "model", "cv", "dummy")
+if (!dir.exists(dirname(path))) {
+      dir.create(dirname(path), recursive = TRUE)
+}
+
 # compute for grid_sf CV_chess -----------------------------------------------------
 if (CV_chess) {
   # plan(multicore, workers = 6)
@@ -104,6 +109,10 @@ if (CV_chess) {
 
     df <- tibble::tibble(
       Model = rep(mod_names_a, each = nrow(cv_grid_test)),
+      # expect = as.vector(sapply(ls_a_score, function(x) {
+      #   get(x)$pred$expect$mean
+      # })),
+      # count_test = rep(cv_grid_test$count_test, times = length(mod_names_a)),
       RMSE = as.vector(sapply(ls_a_score, function(x) {
         sqrt(get(x)$pred$obs_prob$SE)
       })),
