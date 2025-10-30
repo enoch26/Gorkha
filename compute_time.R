@@ -13,6 +13,11 @@ all_mod_nm <- list(
   fit6b = "fit6b" 
 )
 
+c_path <- here("figures", "model", "ctime", "dummy")
+if (!dir.exists(dirname(c_path))) {
+  dir.create(dirname(c_path), recursive = TRUE)
+}
+
 all_mod_nm_df <- data.table::transpose(all_mod_nm)
 ctime_df <- data.frame(
   sapply(names(all_mod_nm), function(x) {
