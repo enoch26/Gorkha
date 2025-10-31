@@ -746,14 +746,14 @@ cv_partition <- function(samplers, resolution = NULL, nrows = NULL, ncols = NULL
   require(sf)
   # Create a grid for the given boundary
   if (is.null(resolution)) {
-    grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers,...))),
+    grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers))), # manual fix can remove
                         crs = fm_crs(samplers)$input,
                         nrows = nrows, ncols = ncols
     )
   }
   
   if (is.null(c(nrows, ncols))) {
-    grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers,...))),
+  grid <- terra::rast(terra::ext(st_as_sf(fm_nonconvex_hull(samplers))), # manual fix can remove
                         crs = fm_crs(samplers)$input,
                         resolution = resolution
     )
