@@ -285,12 +285,12 @@ score <- function(object,
         paste0(
           "list(expect = expect, variance = variance, obs_prob = dnorm(",
           "get(obs, newdata)",
-          ", mean = rep(expect,", nrow(newdata), ")", 
+          ", mean = rep(expect,", nrow(newdata), ")",
           ", sd = rep(sqrt(variance),", nrow(newdata), ")))}"
         )
       )
       )
-    } else { 
+    } else {
       formula <- as.formula(paste(
         paste0(" ~ { expect <-  ", ff),
         "\n",
@@ -319,9 +319,9 @@ score <- function(object,
     
     # the correct way to compute AE
     # pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_median)
-    if(ff == "Intercept"){
-      pred$obs_prob <- lapply(pred$obs_prob, function(el) rep(el, length(get(obs, newdata))))
-    }
+    # if(ff == "Intercept"){
+    #   pred$obs_prob <- lapply(pred$obs_prob, function(el) rep(el, length(get(obs, newdata))))
+    # }
       pred$obs_prob$AE <- AE <- abs(get(obs, newdata) - post_E)
       pred$obs_prob$SE <- SE <- (get(obs, newdata) - post_E)^2
       pred$obs_prob$DS <- DS <- SE / post_Var + log(post_Var)
