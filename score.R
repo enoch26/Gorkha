@@ -14,7 +14,12 @@ if (!dir.exists(dirname(path))) {
 # compute for grid_sf CV_chess -----------------------------------------------------
 if (CV_chess) {
   # plan(multicore, workers = 6)
+
   cv_grid_test <- cv_grid[[test]]
+  
+  if(max(cv_grid_test$count_test) == 322){
+    cv_grid_test <- cv_grid_test[(cv_grid_test$count_test != 322), ] # manually remove the extreme case for white
+  }
 
   cv_grid_test$.block <- 1:nrow(cv_grid_test)
 
@@ -148,11 +153,11 @@ if (CV_chess) {
     saveRDS(df_, file = here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
   }
 
-  AE_range <- range(df$AE - df_$AE_ref)
-  RMSE_range <- range(df$RMSE - df_$RMSE_ref)
-  DS_range <- range(df$DS - df_$DS_ref)
-  LS_range <- range(df$LS - df_$LS_ref)
-  CRPS_range <- range(df$CRPS - df_$CRPS_ref)
+  AE_range <- range(df$AE - df_$AE_ref,na.rm=TRUE)
+  RMSE_range <- range(df$RMSE - df_$RMSE_ref,na.rm=TRUE)
+  DS_range <- range(df$DS - df_$DS_ref,na.rm=TRUE)
+  LS_range <- range(df$LS - df_$LS_ref,na.rm=TRUE)
+  CRPS_range <- range(df$CRPS - df_$CRPS_ref,na.rm=TRUE)
 
   AE_diff_range <- c(-1, 1) * max(abs(AE_range))
   RMSE_diff_range <- c(-1, 1) * max(abs(RMSE_range))
@@ -273,6 +278,10 @@ if (CV_chess) {
 
     f6b_score <- {
       score(fit6b, newdata = landslides_c_test, obs = "logarea_m2", n.samples = 1000, seed = seed)
+    }
+    
+    if (exists("ls_b_score")) {
+      rm(ls_b_score)
     }
 
     ls_b_score <- ls(pattern = "b_score")
@@ -537,11 +546,11 @@ if (CV_thin) {
   }
 
 
-  AE_range <- range(df$AE - df_$AE_ref)
-  RMSE_range <- range(df$RMSE - df_$RMSE_ref)
-  DS_range <- range(df$DS - df_$DS_ref)
-  LS_range <- range(df$LS - df_$LS_ref)
-  CRPS_range <- range(df$CRPS - df_$CRPS_ref)
+  AE_range <- range(df$AE - df_$AE_ref, na.rm=TRUE)
+  RMSE_range <- range(df$RMSE - df_$RMSE_ref, na.rm=TRUE)
+  DS_range <- range(df$DS - df_$DS_ref, na.rm=TRUE)
+  LS_range <- range(df$LS - df_$LS_ref, na.rm=TRUE)
+  CRPS_range <- range(df$CRPS - df_$CRPS_ref, na.rm=TRUE)
 
   AE_diff_range <- c(-1, 1) * max(abs(AE_range))
   RMSE_diff_range <- c(-1, 1) * max(abs(RMSE_range))
@@ -791,11 +800,11 @@ if (FALSE) {
       sf::st_as_sf()
 
 
-    AE_range <- range(df$AE - df_$AE_ref)
-    RMSE_range <- range(df$RMSE - df_$RMSE_ref)
-    DS_range <- range(df$DS - df_$DS_ref)
-    LS_range <- range(df$LS - df_$LS_ref)
-    CRPS_range <- range(df$CRPS - df_$CRPS_ref)
+    AE_range <- range(df$AE - df_$AE_ref,na.rm=TRUE)
+    RMSE_range <- range(df$RMSE - df_$RMSE_ref,na.rm=TRUE)
+    DS_range <- range(df$DS - df_$DS_ref,na.rm=TRUE)
+    LS_range <- range(df$LS - df_$LS_ref,na.rm=TRUE)
+    CRPS_range <- range(df$CRPS - df_$CRPS_ref,na.rm=TRUE)
 
     AE_diff_range <- c(-1, 1) * max(abs(AE_range))
     RMSE_diff_range <- c(-1, 1) * max(abs(RMSE_range))

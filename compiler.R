@@ -79,7 +79,9 @@ source("pred.R");source("pred_zm.R");q()
 CV_thin <- FALSE; CV_chess <- FALSE
 trainset <- ""
 cv_thin_resol <- c(3, 3)
-source("read_data.R");source("model.R");source("pred.R")
+source("read_data.R");source("model.R");
+# generate posterior predictions
+source("pred.R")
 
 # source("read_data.R");source("model.R");source("score_b.R")
 # source("read_data.R");source("model.R");source("score.R");q()

@@ -53,16 +53,16 @@ library(patchwork)
   ggsave(paste0("figures/model/", "fp_a", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw, dpi = 150)
   
   fp_b %<-% {
-    predict(fit6b,
+    predict(fit5b,
             newdata = pxl,
-            formula = fml_mu_(fml6b), # say fit6b
+            formula = fml_mu_(fml5b), # TODO say fit5b
             n.samples = 100, seed = seed[1]
     )
   }
   fp_lst_b <- list()
   
    for (j in 1:length(fp_b)) {
-    ff <- fit6b$bru_info$lhoods[[1]]$formula # say fit6b
+    ff <- fit5b$bru_info$lhoods[[1]]$formula # TODO say fit5b
     if (names(fp_b[j]) != "Intercept") {
       fp_lst_b[[j]] <- ggplot() +
         # gg(fp_b[[j]], aes(fill = logit_inv(sd/mean)), geom = "tile") +
@@ -93,8 +93,8 @@ library(patchwork)
              ) + 
     plot_annotation(paste0(deparse(ff, width.cutoff = 150L)))
   print(paste0(deparse(ff, width.cutoff = 150L)))
-  ggsave(paste0("figures/model/", "fp_b", nm_chess, "_cv.pdf"), width = .75*tw, height =  .75*tw)
-  ggsave(paste0("figures/model/", "fp_b", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw, dpi = 150)
+  ggsave(paste0("figures/model/", "fp5b", nm_chess, "_cv.pdf"), width = .75*tw, height =  .75*tw)
+  ggsave(paste0("figures/model/", "fp5b", nm_chess, "_cv.png"), width = .75*tw, height =  .75*tw, dpi = 150)
   
   
   # ggplot() +
