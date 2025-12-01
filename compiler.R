@@ -51,8 +51,8 @@ source("read_data.R");source("model.R");source("score.R"); source("compute_time.
 # either choose thinA or thinB for trainset
 # Sys.sleep(3600)
 CV_thin <- TRUE; CV_chess <- FALSE
-# trainset <- "thinA" # "thinA" or "thinB"
-trainset <- "thinB"
+trainset <- "thinA" # "thinA" or "thinB"
+# trainset <- "thinB"
 cv_thin_resol <- c(3, 3)
 # cv_thin_resol <- c(5, 5)
 source("read_data.R");source("model.R");source("score.R")
@@ -63,6 +63,7 @@ source("compute_time.R"); q()
 
 # FULL Model for Model Case Study --------------------------------------------------------------------
 # Code to run Full model for Model Case Study
+# Sys.sleep(10000)
 CV_thin <- FALSE; CV_chess <- FALSE
 trainset <- ""
 cv_thin_resol <- c(3, 3)

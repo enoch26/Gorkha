@@ -9,6 +9,7 @@ library(ggplot2)
 library(terra)
 library(tidyterra)
 library(future)
+library(patchwork)
 # https://www.wvview.org/os_sa/15b_Raster_Analysis_terra.html
 # https://rspatial.github.io/terra/reference/focal.html
 # https://stackoverflow.com/questions/76263598/error-with-custom-function-in-terrafocal-in-r
@@ -158,9 +159,9 @@ if(FALSE){
 for (l in c(14982, 15329, 17757, 22048)) {
   source("mchi_zm.R")
 }
-for (l in c(15329)) {
-  source("mchi_zm.R")
-}
+# for (l in c(15329)) {
+#   source("mchi_zm.R")
+# }
 
 
 
@@ -188,7 +189,7 @@ if (FALSE) {
 
 
 if (to_plot) {
-  ggplot(mchi %>% filter(m_chi > 0), aes(x = log(m_chi))) +
+  ggplot(mchi %>% filter(m_chi > 0), aes(x = log10(m_chi))) +
     geom_histogram(bins = 200)
   ggsave(paste0("data/lsdtt/", fdr, "/mchi_hist.png"), width = tw, height = tw / 2)
 }
@@ -214,14 +215,14 @@ if (file.exists(here("data/mchi_sf_samp.shp"))) {
 # ggsave(paste0("data/lsdtt/", fdr, "mchi_geq0.png"), width = tw, height = tw / 2)
 
 
-ggplot() +
-  geom_spatraster(data = mchi_terra_focal_mean) +
-  scale_fill_viridis_c(na.value = "transparent")
-ggsave(paste0("data/lsdtt/", fdr, "mchi_focal_mean_.png"), width = tw, height = tw / 2)
-ggplot() +
-  geom_spatraster(data = mchi_terra_focal_mean["focal_1000"]) +
-  scale_fill_viridis_c(na.value = "transparent")
-ggsave(paste0("data/lsdtt/", fdr, "mchi_focal_mean1000_.png"), width = tw, height = tw / 2)
+# ggplot() +
+#   geom_spatraster(data = mchi_terra_focal_mean) +
+#   scale_fill_viridis_c(na.value = "transparent")
+# ggsave(paste0("data/lsdtt/", fdr, "mchi_focal_mean_.png"), width = tw, height = tw / 2)
+# ggplot() +
+#   geom_spatraster(data = mchi_terra_focal_mean["focal_1000"]) +
+#   scale_fill_viridis_c(na.value = "transparent")
+# ggsave(paste0("data/lsdtt/", fdr, "mchi_focal_mean1000_.png"), width = tw, height = tw / 2)
 
 
 # rf2ch$rf2ch_mchi <- rf2ch$rf2ch_km*(mchi_terra_focal_mean$focal_1000)
@@ -247,7 +248,7 @@ if (to_plot) {
   # mchi_sf_samp
   ggplot() +
     gg(
-      data = mchi_sf_samp, aes(color = log(m_chi + 13)), geom = "tile",
+      data = mchi_sf_samp, aes(color = log10(m_chi + 13)), geom = "tile",
       # alpha = .5,
       size = 0.2
     ) +
@@ -257,7 +258,7 @@ if (to_plot) {
   ggsave(paste0("data/lsdtt/", fdr, "/figure/mchi_samp.png"), width = tw, height = tw / 2)
   ggplot() +
     gg(
-      data = mchi_sf_samp, aes(color = log(m_chi + 13)), geom = "tile",
+      data = mchi_sf_samp, aes(color = log10(m_chi + 13)), geom = "tile",
       # alpha = .5,
       size = 0.2
     ) +

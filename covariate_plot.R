@@ -1,11 +1,16 @@
+CV_thin <- FALSE; CV_chess <- FALSE
+trainset <- ""
+cv_thin_resol <- c(3, 3)
+source("read_data.R")
+pga_mean_raster$pga_mean_log10 <- log10(pga_mean_raster$pga_mean_exp)
 ggplot() + 
   geom_spatraster(data = pga_mean_raster %>% crop(bnd, mask = TRUE), 
-                  aes(fill = pga_mean)) + 
+                  aes(fill = pga_mean_exp)) + 
   geom_sf(data = bnd, fill = NA, col = "red") +
   ggspatial::annotation_scale(location = "tr") +
   ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in")) +
   scale_fill_viridis_c(
-    name = "log PGA", 
+    name = "PGA", 
     # option = "C",
     na.value = "transparent"  
   )
@@ -46,15 +51,15 @@ ggplot() + geom_sf(data = landcover %>% st_intersection(bnd), aes(fill = as.fact
   scale_fill_discrete(name = "Land cover")
 ggsave("figures/landcover.png", width = 12, height = 8, dpi = 100)
 
-
-ggplot() + geom_spatraster(data = log_ksn_tag$cop30dem_channel_tagged_pixels %>% 
+log_ksn_tag$log10ksn <- log_ksn_tag$cop30dem_channel_tagged_pixels / log(10)
+ggplot() + geom_spatraster(data = log_ksn_tag$log10ksn %>% 
                                  crop(bnd, mask = TRUE), 
-                               aes(fill = cop30dem_channel_tagged_pixels)) +
+                               aes(fill = log10ksn)) +
   geom_sf(data = bnd, fill = NA, col = "red") +
   ggspatial::annotation_scale(location = "tr") +
   ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in")) +
   scale_fill_viridis_c(
-    name = expression(log ~ k[sn]), 
+    name = expression(log[10] ~ k[sn]), 
     # option = "C",
     na.value = "transparent"  
   )

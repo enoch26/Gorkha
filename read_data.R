@@ -217,6 +217,7 @@ if (FALSE) {
 # The units (except for MMI, which is expressed in linear units) are the natural logarithm of the physical units: for acceleration that is ln(g) and for velocity the units are ln(cm/s).
 
 e <- ext(84, 89, 27, 29)
+# ln PGA
 pga_mean_raster <-
   rast(here(
     "data", "raster", "pga_mean.flt"

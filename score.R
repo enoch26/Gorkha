@@ -42,6 +42,7 @@ if (CV_chess) {
 
 
   if (file.exists(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))) {
+    df <- readRDS(here("RDS", trainset, paste0("df_score", nm_chess, ".RDS")))
     df_ <- readRDS(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
   } else {
     f1a_score <- {
@@ -133,7 +134,8 @@ if (CV_chess) {
       CRPS = c(crps1a, crps2a, crps3a, crps4a, crps5a, crps6a),
       geometry = rep(cv_grid_test$geometry, times = length(mod_names_a))
     )
-
+    saveRDS(df, file = here("RDS", trainset, paste0("dfscore_", nm_chess, ".RDS")))
+    
     df_ <- df %>%
       left_join(
         df %>%
@@ -428,14 +430,15 @@ if (CV_thin) {
   ## fita --------------------------------------------------------------------
 
   if (file.exists(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))) {
+    df <- readRDS(here("RDS", trainset, paste0("dfscore_", nm_chess, ".RDS")))
     df_ <- readRDS(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
   } else {
  
     # cv_newdata <- cv_newdata %>% left_join(data.frame(cv_grid %>% st_drop_geometry() %>% select(.block, count, count_test)),
     #   by = ".block")
-    f1a_score <- {
-      score(fit1a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 10, seed = seed)
-    }
+    # f1a_score <- {
+    #   score(fit1a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 10, seed = seed)
+    # }
     f1a_score <- {
       score(fit1a, newdata = cv_newdata, cv_grid = cv_grid, obs = "count_test", n.samples = 1000, seed = seed)
     }
@@ -527,7 +530,8 @@ if (CV_thin) {
       })),
       geometry = rep(cv_grid$geometry, times = length(mod_names_a))
     )
-
+    saveRDS(df, file = here("RDS", trainset, paste0("dfscore_", nm_chess, ".RDS")))
+    
     df_ <- df %>%
       left_join(
         df %>%

@@ -148,6 +148,8 @@ ksn_tag <- rast(here("data", "ksn_tag_near.tif")) %>%
   project(crs_nepal$input, threads = TRUE) %>%
   crop(bnd_out, mask = TRUE) %>%
   clamp(1, values = TRUE)
+
+# natural log here for better numerical stability
 log_ksn_tag <- log(ksn_tag$cop30dem_channel_tagged_pixels)
 sqrt_ksn_tag <- sqrt(ksn_tag$cop30dem_channel_tagged_pixels)
 # rm(ksn_tag)
@@ -155,7 +157,7 @@ sqrt_ksn_tag <- sqrt(ksn_tag$cop30dem_channel_tagged_pixels)
 landslides_c$log_ksn <- extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE)
 
 if(FALSE){
-  landslides_c$log_ksn <- unlist(extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE))
+  landslides_c$log_ksn <- unlist(extract(log_ksn_tag, vect(st_geometry(landslides_c)), ID = FALSE))/log(10)
   landslides_c$fd2ch <- unlist(extract(fd2ch$fd2ch_km, vect(st_geometry(landslides_c)), ID = FALSE))
   landslides_c$rf2ch <- unlist(extract(rf2ch$rf2ch_km, vect(st_geometry(landslides_c)), ID = FALSE))
   landslides_c <- st_intersection(landslides_c, landcover["CODE1"])
@@ -175,25 +177,25 @@ if(FALSE){
 
   
   ggplot(landslides_c_, aes(x=log_ksn, y=logarea_m2)) + geom_point(aes(col=rf2ch), size =0.0001, alpha = 0.7) +
-     scale_color_viridis(values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
+     scale_color_viridis(name = expression(log[10] ~ k[sn]),values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
   ggsave("landslides_ksn_logarea_fdcol_landcover.pdf", width = tw, height = tw)
   
   ggplot(landslides_c_, aes(x=fd2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
-    scale_color_viridis(values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
+    scale_color_viridis(name = expression(log[10] ~ k[sn]),values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
   ggsave("landslides_ksn_logarea_fd_landcover.pdf", width = tw, height = tw)
   
   ggplot(landslides_c_, aes(x=rf2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
-    scale_color_viridis(values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
+    scale_color_viridis(name = expression(log[10] ~ k[sn]),values = sc, option = col_opt) + facet_wrap(~ CODE1, scales="free_y")
   ggsave("landslides_ksn_logarea_rf_landcover.pdf", width = tw, height = tw)
   
   ggplot(landslides_c_, aes(x=fd2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
-     scale_color_viridis(option = "D") + facet_wrap(~ ROCK_TYPES, scales="free_y")
+     scale_color_viridis(name = expression(log[10] ~ k[sn]),option = "D") + facet_wrap(~ ROCK_TYPES, scales="free_y")
   ggsave("landslides_ksn_logarea_fd_geology.pdf", width = tw, height = tw)
   
 
   
   ggplot(landslides_c_, aes(x=rf2ch, y=logarea_m2)) + geom_point(aes(col=log_ksn), size =0.0001, alpha = 0.7) +
-     scale_color_viridis(option = "D") + facet_wrap(~ ROCK_TYPES, scales="free_y")
+     scale_color_viridis(name = expression(log[10] ~ k[sn]),option = "D") + facet_wrap(~ ROCK_TYPES, scales="free_y")
   ggsave("landslides_ksn_logarea_rf_geology.pdf", width = tw, height = tw)
 
   ggplot(landslides_c_, aes(x=fd2ch, y=logarea_m2)) + 

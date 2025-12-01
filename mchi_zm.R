@@ -54,8 +54,8 @@ if(FALSE){
   # with get_tiles
   # https://dieghernan.github.io/202205_tidyterra/
   tile <- maptiles::get_tiles(st_as_sfc(basin_zm_sf), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13)
-  ksn_tag_zm$log_cop30dem_channel_tagged_pixels <- log(ksn_tag_zm$cop30dem_channel_tagged_pixels)
-  mchi_sf_zm$log_m_chi <- log(mchi_sf_zm$m_chi)
+  ksn_tag_zm$log_cop30dem_channel_tagged_pixels <- log10(ksn_tag_zm$cop30dem_channel_tagged_pixels)
+  mchi_sf_zm$log_m_chi <- log10(mchi_sf_zm$m_chi)
 
 # find the nearest pairs
 mchi_lds_pairs <- st_nearest_feature(landslides_zm, mchi_sf_zm)
@@ -77,14 +77,14 @@ if (to_plot) {
     ggplot() +
       geom_spatraster_rgb(data = tile) +
       gg(
-        data = mchi_sf_zm, aes(color = log(m_chi)),
+        data = mchi_sf_zm, aes(color = log10(m_chi)),
         # geom = "tile",
         # alpha = .5,
         size = 0.5
       ) +
       geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
       geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-      scale_color_viridis_c(name = expression(log_k[sn])) +
+      scale_color_viridis_c(name = expression(log[10] ~ k[sn])) +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
     # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_zm_tile.pdf"), width = tw, height = tw / 2)
@@ -99,15 +99,13 @@ if (to_plot) {
         maxcell = 5e+06
       ) +
       # scale_fill_grass_c(palette = "celsius")
-      scale_fill_grass_c(na.value = "transparent", palette = "viridis", name = expression(log_k[sn])) +
+      scale_fill_grass_c(na.value = "transparent", palette = "viridis", name = expression(log[10] ~ k[sn])) +
       # geom_sf(data = mchi_sf_zm, aes(color = log_m_chi),
       #    # geom = "tile",
       #    alpha = .5,
       #    size = 0.1) +
       geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
       geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-      # labs(color = expression(paste("log(area)", m^{2}))) + 
-      # scale_color_viridis_c(na.value = "transparent", name = expression(log_k[sn])) +
       ggspatial::annotation_scale(location = "br") +
       ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
 
@@ -125,14 +123,13 @@ if (to_plot) {
       geom_spatraster_rgb(data = tile) +
       gg(
         data = mchi_sf_zm, aes(
-          color = log(m_chi)
-          # ,alpha = .5
+          color = log10(m_chi)
         ), # geom = "tile",
         size = 0.5
       ) +
-      scale_color_viridis_c(name = expression(log_k[sn])) +
+      scale_color_viridis_c(name = expression(log[10] ~ k[sn])) +
       geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-      # geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.1, aes(alpha = log(Area_m2))) +
+      # geom_sf(data = landslides_poly_zm, fill = "red", col = "red", size = 0.1, aes(alpha = log10(Area_m2))) +
       geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
       # guides(fill = "log(area)") +
       ggspatial::annotation_scale(location = "br") +
@@ -156,7 +153,7 @@ if (to_plot) {
     ggplot() +
       geom_point(
         data = as.data.frame(mchi_sf_zm),
-        aes(x = flow_distance, y = elevation, col = log(m_chi)), size = 0.5
+        aes(x = flow_distance, y = elevation, col = log10(m_chi)), size = 0.5
       ) +
       geom_point(
         data = landslides_zm_df,
@@ -164,7 +161,7 @@ if (to_plot) {
       ) + xlab("Relative flow distance (m)") + ylab("Elevation (m)") +
       # theme(axis.text.y = element_blank(),
       #   axis.ticks = element_blank())
-      scale_color_viridis_c(name = expression(log_k[sn]))
+      scale_color_viridis_c(name = expression(log[10] ~ k[sn]))
     ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_mchi_analysis.png"), width = tw/2, height = tw /4)
     # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_basin_mchi_analysis.png"), width = tw/2, height = tw /4)
   }
@@ -251,7 +248,7 @@ if (concavity) {
       mchi_ls[[i]] <- ggplot() +
         geom_spatraster_rgb(data = tile) +
         gg(
-          data = get(mchi_nm_ls[i]), aes(color = log(m_chi)),
+          data = get(mchi_nm_ls[i]), aes(color = log10(m_chi)),
           # geom = "tile",
           # alpha = .5,
           size = 0.25
@@ -259,11 +256,11 @@ if (concavity) {
         geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
         ggtitle(paste0("m_n=0.", i + 3)) +
         # geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-        scale_color_viridis_c(name = expression(log_k[sn])) +
+        scale_color_viridis_c(name = expression(log[10] ~ k[sn])) +
         ggspatial::annotation_scale(location = "br") +
         ggspatial::annotation_north_arrow(location = "br", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
     }
-    patchwork::wrap_plots(mchi_ls, guide = "collect", byrow = TRUE, ncol = 3) + plot_annotation(tag_levels = 'A') &
+    patchwork::wrap_plots(mchi_ls, guide = "collect", byrow = TRUE, ncol = 3) + patchwork::plot_annotation(tag_levels = 'A') &
       theme(legend.position = "bottom")
     ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.pdf"), width = tw, height = tw / 2)
     ggsave(paste0("data/lsdtt/", j, "_", "mchi_mn_wrap.png"), width = tw, height = tw / 2, dpi = 75)
@@ -289,7 +286,7 @@ if (FALSE) {
   ksn_bnd <- boundaries(ksn_tag_zm$cop30dem_channel_tagged_pixels)
   
   ggplot() +
-    gg(data = log(ksn_tag_zm$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_zm$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   
   ggsave("ksn_tag_zm2228.pdf", width = tw, height = tw / 2)
@@ -297,7 +294,7 @@ if (FALSE) {
   ksn_tag_zm_ <- ksn_tag_zm$cop30dem_channel_tagged_pixels %>% clamp(lower = exp(3), values = FALSE)
   
   ggplot() +
-    gg(data = log(ksn_tag_zm_$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_zm_$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   
   ggsave("ksn_tag_zm2228_.pdf", width = tw, height = tw / 2)
@@ -310,7 +307,7 @@ if (FALSE) {
   )
   
   ggplot() +
-    gg(data = log(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   
   ggsave("ksn_tag_zm2228_near.pdf", width = tw, height = tw / 2)
@@ -329,20 +326,20 @@ if (FALSE) {
         ifelse(cop30dem_AllBasins == 2228, NA, cop30dem_channel_tagged_pixels)
     )
   ggplot() +
-    gg(data = log(ksn_tag_$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   ggsave("ksn_tag_.pdf", width = tw, height = tw / 2)
   ksn_tag_zm_near <- rast(here("data", "lsdtt", fdr, "ksn_tag_zm_near2228.tif")) %>%
     project(crs_nepal$input, threads = TRUE)
   # %>% crop(ksn_bnd, mask = TRUE)
   ggplot() +
-    gg(data = log(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_zm_near$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   ggsave("ksn_tag_near.pdf", width = tw, height = tw / 2)
   
   ksn_tag_ <- merge(ksn_tag_zm_near$cop30dem_channel_tagged_pixels, ksn_tag_$cop30dem_channel_tagged_pixels)
   ggplot() +
-    gg(data = log(ksn_tag_$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   ggsave("ksn_tag_merged.pdf", width = tw, height = tw / 2)
   
@@ -354,7 +351,7 @@ if (FALSE) {
                              # threads = FALSE # when interpolate = TRUE no way to control threads
   )
   ggplot() +
-    gg(data = log(ksn_tag_near$cop30dem_channel_tagged_pixels)) +
+    gg(data = log10(ksn_tag_near$cop30dem_channel_tagged_pixels)) +
     scale_fill_viridis_c(na.value = "transparent")
   ggsave("ksn_tag_near.pdf", width = tw, height = tw / 2)
   writeRaster(ksn_tag_near$cop30dem_channel_tagged_pixels, here("data", "ksn_tag_near.tif"), overwrite = TRUE)
@@ -403,13 +400,13 @@ if (FALSE) {
     # )) +
     geom_sf(data = basin_zm_sf, col = "red", fill = NA) +
     gg(
-      data = mchi_sf_zm, aes(color = log(m_chi)),
+      data = mchi_sf_zm, aes(color = log10(m_chi)),
       # geom = "tile",
       # alpha = .5,
       size = 0.5
     ) +
     geom_sf(data = landslides_zm, fill = "red", col = "red", size = 0.2, alpha = .5) +
-    labs(col= expression(log(k['sn']))) +
+    labs(col= expression(log[10](k['sn']))) +
     scale_color_viridis_c()
   # ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(basin_info$cop30dem_AllBasins), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
   ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_/basin_zm_hs.pdf"), width = tw, height = tw / 2)
