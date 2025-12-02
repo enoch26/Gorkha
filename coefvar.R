@@ -60,23 +60,33 @@ library(patchwork)
     )
   }
   fp_lst_b <- list()
-  
+  pwr <- 3 
+  sc <- scales::rescale(seq(0, 1, length.out = 30)^pwr)
+  pwr1 <- 8 
+  sc1 <- scales::rescale(seq(0, 1, length.out = 30)^pwr1)
+  diff(sc, lag = 1, differences = 1)
    for (j in 1:length(fp_b)) {
     ff <- fit3b$bru_info$lhoods[[1]]$formula # TODO say fit3b
     if (names(fp_b[j]) != "Intercept") {
+    if (names(fp_b[j]) == "mu") {
       fp_lst_b[[j]] <- ggplot() +
-        # gg(fp_b[[j]], aes(fill = logit_inv(sd/mean)), geom = "tile") +
-        gg(fp_b[[j]], aes(fill = sd/mean), geom = "tile") +
-        # scale_fill_viridis_c(limits = c(0.5, 1), values = sc, option = "D") +
+        gg(fp_b[[j]], aes(fill = sd/abs(mean)), geom = "tile") +
+        scale_fill_viridis_c(values = sc1, option = "D") +
+        geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+        labs(fill=expression(c['v']), x="",y="") +
+        ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(fp_b[j]))))
+    } else{
+      fp_lst_b[[j]] <- ggplot() +
+        gg(fp_b[[j]], aes(fill = sd/abs(mean)), geom = "tile") +
         scale_fill_viridis_c(values = sc, option = "D") +
         geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
         labs(fill=expression(c['v']), x="",y="") +
-        # ggtitle(paste0(names(fp_b[j])))
         ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(fp_b[j]))))
+    }
     } else {
       fp_lst_b[[j]] <- ggplot() + gg(fp_b[[j-1]],
                                      # aes(fill = logit_inv(sd/mean)), geom = "tile") + 
-                                     aes(fill = sd/mean), geom = "tile") + 
+                                     aes(fill = sd/abs(mean)), geom = "tile") + 
         annotate(geom = 'label',
                  label = paste0("Intercept CV = ", logit_inv(fp_b[[j]]["sd"]/fp_b[[j]]["mean"])),
                  x = 400, y = 3150) +

@@ -141,39 +141,7 @@ fp6b %<-% {
   )
 }
 
-if (FALSE) {
-  fp7a %<-% {
-    predict(fit7a,
-      newdata = pxl,
-      formula = fml_lambda(fml7a),
-      n.samples = 100, seed = seed[1]
-    )
-  }
 
-  fp7b %<-% {
-    predict(fit7b,
-      newdata = pxl,
-      formula = fml_mu(fml7b),
-      n.samples = 100, seed = seed[1]
-    )
-  }
-
-  fp8a %<-% {
-    predict(fit8a,
-      newdata = pxl,
-      formula = fml_lambda(fml8a),
-      n.samples = 100, seed = seed[1]
-    )
-  }
-
-  fp8b %<-% {
-    predict(fit8b,
-      newdata = pxl,
-      formula = fml_mu(fml8b),
-      n.samples = 100, seed = seed[1]
-    )
-  }
-}
 plan(sequential)
 
 rm(fp_a)
@@ -186,6 +154,8 @@ pred_lst_b <- ls(pattern = "fp.b")
 #   geom_sf(data = landcover_8wp, fill = "red") +
 #   geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red")
 # ggsave(paste0("figures/model/check_landcover.pdf"), width = tw, height = tw/2)
+pwr <- 1.75
+sc <- scales::rescale(seq(0,1,length.out = 30)^pwr)
 
 if (to_plot) {
   for (i in 1:length(pred_lst_a)) {
@@ -195,10 +165,10 @@ if (to_plot) {
       if (names(get(pred_lst_a[[i]])[j]) != "Intercept") {
         p_lst_a[[j]] <- ggplot() +
           gg(get(pred_lst_a[[i]])[[j]]["mean"], geom = "tile") +
-          scale_fill_viridis_c(option = "D") +
+          # scale_fill_viridis_c(option = "D") +
+          scale_fill_viridis_c(values = sc, option = "D") +
           labs(x = "", y = "") +
           geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
-          # ggtitle(paste0(names(get(pred_lst_a[[i]])[j])))
           ggtitle(gsub("^((log_[^_]+)|([^_]+)).*", "\\1", paste0(names(get(pred_lst_a[[i]])[j]))))
       } else {
         p_lst_a[[j]] <- ggplot() +
@@ -208,7 +178,7 @@ if (to_plot) {
             label = paste0("Intercept = ", round(get(pred_lst_a[[i]])[[j]]["mean"],3)),
             x = 400, y = 3150
           ) +
-          scale_fill_viridis_c(option = "D") +
+          scale_fill_viridis_c(values=sc,option = "D") +
           labs(x = "", y = "") +
           geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
           ggtitle(paste0(names(get(pred_lst_a[[i]])[j - 1])))
