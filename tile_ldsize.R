@@ -8,11 +8,12 @@ landslides_c_ <- st_intersection(landslides_c, landcover)
 landslides_c_ <- landslides_c_[!is.na(landslides_c_$CODE1),]
 df <- data.frame(
   Area_m2 = landslides_c_$Area_m2,
-  logarea_m2 = landslides_c_$logarea_m2, landcover = landslides_c_$CODE1
+  logarea_m2 = log10(landslides_c_$Area_m2), 
+  landcover = landslides_c_$CODE1
 )
 ggplot(df, aes(x = logarea_m2, fill = landcover)) +
   geom_histogram() +
-  labs(y="landslides count", x = expression(paste("log area (", m^{2},")"))) +
+  labs(y="landslides count", x = expression(paste("log[10] area (", m^{2},")"))) +
   guides(fill=guide_legend(ncol=2))
 # ggsave("figures/landcover_log_hist.png", width = tw, height = tw / 2)
 ggsave("figures/landcover_log_hist.png", width = tw/2, height = tw / 5)
@@ -67,7 +68,7 @@ p2 <- ggplot() + geom_spatraster_rgb(data = tile) +
 
 p3 <-   ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
   geom_histogram() + 
-  labs(y="landslides count", x = expression(paste("log area (", m^{2},")"))) +
+  labs(y="landslides count", x = expression(paste("log[10] area (", m^{2},")"))) +
   guides(fill = "none") + 
   facet_wrap(vars(land_cover), scales = "free_y", ncol = 2) +
   theme(axis.text = element_text(size = 12), 
