@@ -13,7 +13,7 @@ df <- data.frame(
 )
 ggplot(df, aes(x = logarea_m2, fill = landcover)) +
   geom_histogram() +
-  labs(y="landslides count", x = expression(paste("log[10] area (", m^{2},")"))) +
+  labs(y="landslides count", x = expression(paste(log[10]," area (", m^{2},")"))) +
   guides(fill=guide_legend(ncol=2))
 # ggsave("figures/landcover_log_hist.png", width = tw, height = tw / 2)
 ggsave("figures/landcover_log_hist.png", width = tw/2, height = tw / 5)
@@ -33,7 +33,7 @@ landslides_ <- st_intersection(landslides, bnd)
 p1 <- ggplot() + geom_spatraster_rgb(data = tile) + 
   # gg(data = bnd, col = "blue", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
   gg(data = bnd, col = "red", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
-  geom_sf(data = landslides_, col = "red",  size = 0.00005, aes(alpha = log(Area_m2))) +
+  geom_sf(data = landslides_, col = "red",  size = 0.00005, aes(alpha = log10(Area_m2))) +
   geom_spatraster_contour_text(data = pga_mean_raster$pga_mean_exp %>% 
                                  crop(bnd, mask = TRUE), 
                                breaks = seq(.1, .9, .15),
@@ -51,7 +51,7 @@ p1 <- ggplot() + geom_spatraster_rgb(data = tile) +
 p2 <- ggplot() + geom_spatraster_rgb(data = tile) + 
   # gg(data = bnd, col = "blue", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
   gg(data = bnd, col = "red", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
-  geom_sf(data = landslides_, col = "red",  size = 0.00005, aes(alpha = log(Area_m2))) +
+  geom_sf(data = landslides_, col = "red",  size = 0.00005, aes(alpha = log10(Area_m2))) +
   geom_spatraster_contour_text(data = pga_mean_raster_mw73$pga_mean_exp %>% 
                                  crop(bnd, mask = TRUE), 
                                breaks = seq(.15, .55, .1),
@@ -68,7 +68,7 @@ p2 <- ggplot() + geom_spatraster_rgb(data = tile) +
 
 p3 <-   ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
   geom_histogram() + 
-  labs(y="landslides count", x = expression(paste("log[10] area (", m^{2},")"))) +
+  labs(y="landslides count", x = expression(paste(log[10], " area (", m^{2},")"))) +
   guides(fill = "none") + 
   facet_wrap(vars(land_cover), scales = "free_y", ncol = 2) +
   theme(axis.text = element_text(size = 12), 

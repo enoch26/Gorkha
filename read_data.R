@@ -215,7 +215,6 @@ if (FALSE) {
 # https://earthquake.usgs.gov/earthquakes/eventpage/us20002926/shakemap/pgv
 # https://cbworden.github.io/shakemap/manual4_0/ug_products.html
 # The units (except for MMI, which is expressed in linear units) are the natural logarithm of the physical units: for acceleration that is ln(g) and for velocity the units are ln(cm/s).
-
 e <- ext(84, 89, 27, 29)
 # ln PGA
 pga_mean_raster <-
@@ -487,12 +486,12 @@ plan(sequential)
 
   # After looking into the variance, it is not sure if it is systematic or local error
   # otherwise Cmatrix generic0 to incorporate uncertainty would work
-  # pga_std_raster <-
-  #   rast(here(
-  #     "data", "raster", "pga_std.flt"
-  #   )) %>%
-  #   project(crs_nepal$input) %>%
-  #   crop(bnd_out, mask = TRUE)
+  pga_std_raster <-
+    rast(here(
+      "data", "raster", "pga_std.flt"
+    )) %>%
+    project(crs_nepal$input) %>%
+    crop(bnd_out, mask = TRUE)
   # ggplot() + geom_spatraster(data = pga_std_raster) +
   #   geom_sf(data = bnd, fill = NA, col = "red") +
   #   scale_fill_viridis_c(option = "D") +
@@ -502,7 +501,24 @@ plan(sequential)
   
   
   # pga_std_raster$pga_std_exp <- exp(pga_std_raster$pga_std)
-  
+  #   > pga_std_stars[13]
+  # stars object with 2 dimensions and 1 attribute
+  # attribute(s):
+  #   Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+  # //arrays/imts/GREATER_OF_TW...  0.3918751 0.5611933 0.5645817 0.5622481 0.5670531 0.5671918
+  # dimension(s):
+  #   from  to offset delta x/y
+  # x    1 558      0     1 [x]
+  # y    1 479    479    -1 [y]
+  # > pga_std_stars[12]
+  # stars object with 2 dimensions and 1 attribute
+  # attribute(s):
+  #   Min.   1st Qu.    Median      Mean   3rd Qu.       Max.
+  # //arrays/imts/GREATER_OF_TW...  -6.097057 -4.597333 -3.959478 -3.732339 -3.068431 -0.1443931
+  # dimension(s):
+  #   from  to offset delta x/y
+  # x    1 558      0     1 [x]
+  # y    1 479    479    -1 [y]
   
   if (FALSE) {
     dem <- rast(here("data", "lsdtt", "lanczos_", "cop30dem.bil")) %>%
