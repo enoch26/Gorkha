@@ -52,7 +52,7 @@ _The Himalaya Regional Land Cover Database_
 
 ## Channel Steepness Data
 
-- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with [LSDTopoTools](https://lsdtopotools.github.io/), see `lsdtopotools_driver` folder for scripts and details.
+- Channel steepness index and distance metric to channel raster maps of the Gorkha Earthquake 2015-affected area computed from DEM and processed with [LSDTopoTools](https://lsdtopotools.github.io/) [doi:10.5281/zenodo.8076231](https://doi.org/10.5281/zenodo.8076231), see `lsdtopotools_driver` folder for scripts and details.
 
 ---
 
