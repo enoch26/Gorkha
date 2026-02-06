@@ -80,10 +80,21 @@ p3 <-   ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
         axis.text.y = element_text( size = 12 ),
         axis.title = element_text( size = 12),
         strip.text = element_text(size=12))
+
+p3 <-   ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
+  geom_histogram() + 
+  labs(y="landslides count", x = expression(paste(log[10], " area (", m^{2},")"))) +
+  guides(fill = "none") + 
+  facet_wrap(vars(land_cover), scales = "free_y", ncol = 4) +
+  theme(axis.text = element_text(size = 12), 
+        axis.text.x = element_text( size = 12 ),
+        axis.text.y = element_text( size = 12 ),
+        axis.title = element_text( size = 12),
+        strip.text = element_text(size=12))
 p3;
 # ggsave("figures/landcover_log_hist_fw.png", width = tw/4, height = tw / 3, device = ragg::agg_png);
-ggsave("figures/landcover_log_hist_fw.jpg", width = tw/4, height = tw / 3, type = "cairo", dpi=300);
-ggsave("figures/landcover_log_hist_fw.pdf", width = tw/2, height = tw/4)
+# ggsave("figures/landcover_log_hist_fw.jpg", width = tw/2, height = tw / 8, type = "cairo", dpi=300);
+ggsave("figures/landcover_log_hist_fw.pdf", width = tw/1.25, height = tw/6)
 
 
 # patchwork <- (p1/p2)|p3  
