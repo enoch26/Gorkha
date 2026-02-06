@@ -33,7 +33,7 @@ landslides_ <- st_intersection(landslides, bnd)
 p1 <- ggplot() + geom_spatraster_rgb(data = tile) + 
   # gg(data = bnd, col = "blue", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
   gg(data = bnd, col = "red", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
-  geom_sf(data = landslides_, col = "red",  size = 0.00005, aes(alpha = log10(Area_m2))) +
+  geom_sf(data = landslides_, col = "red",  size = 0.05, aes(alpha = log10(Area_m2))) +
   geom_spatraster_contour_text(data = pga_mean_raster$pga_mean_exp %>% 
                                  crop(bnd, mask = TRUE), 
                                breaks = seq(.1, .9, .15),
@@ -44,14 +44,16 @@ p1 <- ggplot() + geom_spatraster_rgb(data = tile) +
   # geom_sf(data = st_as_sf(epic)[2,] , col = "yellow", fill = NA, shape = 2, size = 0.75) +
   ggspatial::annotation_scale(location = "tr") +
   ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
-# ggsave("figures/tile_ldsize_pga_exp_mw78.pdf", width = tw/2, height = tw/4)
-# p1;ggsave("figures/tile_ldsize_pga_exp_mw78.png", width = tw/2, height = tw/4, dpi = 150)
+
+p1;ggsave("figures/tile_ldsize_pga_exp_mw78.png", width = tw/2, height = tw/4, device = ragg::agg_png, dpi = 200);
+ggsave("figures/tile_ldsize_pga_exp_mw78.pdf", width = tw/2, height = tw/4)
+ggsave("figures/tile_ldsize_pga_exp_mw78.jpg", width = tw/2, height = tw/4, type = "cairo", dpi = 200);
 
 
 p2 <- ggplot() + geom_spatraster_rgb(data = tile) + 
   # gg(data = bnd, col = "blue", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
   gg(data = bnd, col = "red", fill= "transparent", lwd = 0.5) + guides(alpha = "none") +
-  geom_sf(data = landslides_, col = "red",  size = 0.00005, aes(alpha = log10(Area_m2))) +
+  geom_sf(data = landslides_, col = "red",  size = 0.05, aes(alpha = log10(Area_m2))) +
   geom_spatraster_contour_text(data = pga_mean_raster_mw73$pga_mean_exp %>% 
                                  crop(bnd, mask = TRUE), 
                                breaks = seq(.15, .55, .1),
@@ -62,8 +64,10 @@ p2 <- ggplot() + geom_spatraster_rgb(data = tile) +
   # geom_sf(data = st_as_sf(epic)[2,] , col = "yellow", fill = NA, shape = 2, size = 2) +
   ggspatial::annotation_scale(location = "tr") +
   ggspatial::annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.0, "in"), pad_y = unit(0.3, "in"))
-# ggsave("figures/tile_ldsize_pga_exp_mw73.pdf", width = tw/2, height = tw/4)
-# p2;ggsave("figures/tile_ldsize_pga_exp_mw73.png", width = tw/2, height = tw/4, dpi = 150)
+
+p2;ggsave("figures/tile_ldsize_pga_exp_mw73.png", width = tw/2, height = tw/4, device = ragg::agg_png, dpi = 200)
+ggsave("figures/tile_ldsize_pga_exp_mw73.jpg", width = tw/2, height = tw/4, type = "cairo", dpi = 200)
+ggsave("figures/tile_ldsize_pga_exp_mw73.pdf", width = tw/2, height = tw/4)
 
 
 p3 <-   ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
@@ -76,7 +80,10 @@ p3 <-   ggplot(df_, aes(x = logarea_m2, fill = land_cover)) +
         axis.text.y = element_text( size = 12 ),
         axis.title = element_text( size = 12),
         strip.text = element_text(size=12))
-# ggsave("figures/landcover_log_hist_fw.png", width = tw/4, height = tw / 3)
+p3;
+# ggsave("figures/landcover_log_hist_fw.png", width = tw/4, height = tw / 3, device = ragg::agg_png);
+ggsave("figures/landcover_log_hist_fw.jpg", width = tw/4, height = tw / 3, type = "cairo", dpi=300);
+ggsave("figures/landcover_log_hist_fw.pdf", width = tw/2, height = tw/4)
 
 
 # patchwork <- (p1/p2)|p3  
