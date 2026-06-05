@@ -253,10 +253,6 @@ cmp_ <- ~ Intercept(1) +
   slope(dem_terrain_mask["slope"], model = "linear") 
 
 # formula -----------------------------------------------------------------
-# fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag_rw2
-# fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag_rw2
-
-# 14072025 in the thesis
 fml1a <- geometry ~ Intercept + pga_mean_raster_rw2 + landcover + geology + log_ksn_tag + rainfall_rw2
 fml1b <- logarea_m2 ~ Intercept + log_pga_mean_raster + landcover_ + geology_ + log_ksn_tag + rainfall
 
@@ -351,43 +347,11 @@ lik4b %<-% {
     data = landslides_c
   )
 }
-lik5a %<-% {
-  bru_obs(
-    formula = fml5a,
-    family = "cp",
-    data = landslides_c,
-    domain = list(
-      geometry = mesh_fm
-    ),
-    samplers = bnd
-  )
-}
-lik5b %<-% {
-  bru_obs(
-    formula = fml5b,
-    family = "Gaussian",
-    data = landslides_c
-  )
-}
 
-lik6a %<-% {
-  bru_obs(
-    formula = fml6a,
-    family = "cp",
-    data = landslides_c,
-    domain = list(
-      geometry = mesh_fm
-    ),
-    samplers = bnd
-  )
-}
-lik6b %<-% {
-  bru_obs(
-    formula = fml6b,
-    family = "Gaussian",
-    data = landslides_c
-  )
-}
+
+
+
+
 
 
 # fit1 --------------------------------------------------------------------
@@ -599,6 +563,17 @@ if (file.exists(here("RDS", trainset, paste0("fit5a", nm_chess, ".RDS")))) {
     readRDS(here("RDS", trainset, paste0("fit5a", nm_chess, ".RDS")))
   }
 } else {
+  lik5a %<-% {
+    bru_obs(
+      formula = fml5a,
+      family = "cp",
+      data = landslides_c,
+      domain = list(
+        geometry = mesh_fm
+      ),
+      samplers = bnd
+    )
+  }
   # system.time({
   fit5a %<-% {
     bru(
@@ -619,6 +594,13 @@ if (file.exists(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))) {
     readRDS(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))
   }
 } else {
+  lik5b %<-% {
+    bru_obs(
+      formula = fml5b,
+      family = "Gaussian",
+      data = landslides_c
+    )
+  }
   # system.time({
   fit5b %<-% {
     bru(
@@ -639,6 +621,17 @@ if (file.exists(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))) {
       readRDS(here("RDS", trainset, paste0("fit6a", nm_chess, ".RDS")))
     }
   } else {
+    lik6a %<-% {
+      bru_obs(
+        formula = fml6a,
+        family = "cp",
+        data = landslides_c,
+        domain = list(
+          geometry = mesh_fm
+        ),
+        samplers = bnd
+      )
+    }
     # system.time({
     fit6a %<-% {
       bru(
@@ -657,6 +650,13 @@ if (file.exists(here("RDS", trainset, paste0("fit5b", nm_chess, ".RDS")))) {
       readRDS(here("RDS", trainset, paste0("fit6b", nm_chess, ".RDS")))
     }
   } else {
+    lik6b %<-% {
+      bru_obs(
+        formula = fml6b,
+        family = "Gaussian",
+        data = landslides_c
+      )
+    }
     # system.time({
     fit6b %<-% {
       bru(

@@ -42,7 +42,7 @@ if (CV_chess) {
 
 
   if (file.exists(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))) {
-    df <- readRDS(here("RDS", trainset, paste0("df_score", nm_chess, ".RDS")))
+    # df <- readRDS(here("RDS", trainset, paste0("df_score", nm_chess, ".RDS")))
     df_ <- readRDS(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
   } else {
     f1a_score <- {
@@ -155,11 +155,11 @@ if (CV_chess) {
     saveRDS(df_, file = here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
   }
 
-  AE_range <- range(df$AE - df_$AE_ref,na.rm=TRUE)
-  RMSE_range <- range(df$RMSE - df_$RMSE_ref,na.rm=TRUE)
-  DS_range <- range(df$DS - df_$DS_ref,na.rm=TRUE)
-  LS_range <- range(df$LS - df_$LS_ref,na.rm=TRUE)
-  CRPS_range <- range(df$CRPS - df_$CRPS_ref,na.rm=TRUE)
+  AE_range <- range(df_$AE - df_$AE_ref,na.rm=TRUE)
+  RMSE_range <- range(df_$RMSE - df_$RMSE_ref,na.rm=TRUE)
+  DS_range <- range(df_$DS - df_$DS_ref,na.rm=TRUE)
+  LS_range <- range(df_$LS - df_$LS_ref,na.rm=TRUE)
+  CRPS_range <- range(df_$CRPS - df_$CRPS_ref,na.rm=TRUE)
 
   AE_diff_range <- c(-1, 1) * max(abs(AE_range))
   RMSE_diff_range <- c(-1, 1) * max(abs(RMSE_range))
