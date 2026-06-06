@@ -90,7 +90,7 @@ For attribution, please cite this work as: Suen, M. H., Naylor, M., Mudd, S., & 
 ---
 ## Session Information
 
-The code is currently developed and tested in R 4.5.1. Below is the session information for reproducibility:
+The code is currently developed and tested in R 4.6.0. Below is the session information for reproducibility:
 ```
 > sessionInfo()
 R version 4.6.0 (2026-04-24)
