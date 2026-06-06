@@ -58,19 +58,7 @@ if (CV_chess) {
 }
 
 # Library -----------------------------------------------------------------
-
-
-library(dplyr)
-library(stars)
-library(sf)
-library(fmesher)
-library(INLA)
-library(inlabru)
-library(here)
-library(ggplot2)
-library(terra)
-library(tidyterra)
-library(future)
+source("library.R")
 
 # Set the number of threads for parallel processing
 gdalraster::set_config_option("GDAL_NUM_THREADS", "10")

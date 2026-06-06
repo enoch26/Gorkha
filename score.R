@@ -32,12 +32,6 @@ if (CV_chess) {
     saveRDS(cv_newdata, here("data", paste0("cv_newdata_", train, cv_chess_resol[1], ".RDS")))
   }
 
-  # cv_newdata <- cv_newdata %>% left_join(data.frame(cv_grid_test %>% st_drop_geometry() %>%
-  #                                                     select(.block, count_test)),
-  #                                        by = ".block")
-
-
-
   ## fita --------------------------------------------------------------------
 
 
