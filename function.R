@@ -262,7 +262,7 @@ score <- function(object,
   
   #################################################################
   fml <- object$bru_info$lhoods[[1]]$formula
-  ff <- deparse(fml[[3]], width.cutoff = 150L)
+  ff <- deparse(fml[[3]], width.cutoff = 250L)
   print("formula: ")
   print(ff)
   # formula <- as.formula(paste0(" ~  exp(", ff, ")"))

@@ -324,7 +324,6 @@ if (CV_chess) {
 
     ## ECDF --------------------------------------------------------------------
 
-
     dfb <- tibble::tibble(
       Model = rep(mod_names_b, each = nrow(landslides_c_test)),
       RMSE = as.vector(sapply(ls_b_score, function(x) {
@@ -424,7 +423,7 @@ if (CV_thin) {
   ## fita --------------------------------------------------------------------
 
   if (file.exists(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))) {
-    df <- readRDS(here("RDS", trainset, paste0("dfscore_", nm_chess, ".RDS")))
+    # df <- readRDS(here("RDS", trainset, paste0("dfscore_", nm_chess, ".RDS")))
     df_ <- readRDS(here("RDS", trainset, paste0("df_score_", nm_chess, ".RDS")))
   } else {
  

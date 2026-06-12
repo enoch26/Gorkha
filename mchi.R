@@ -156,6 +156,9 @@ if(FALSE){
   lat <- 28.5
 }
 
+for (l in c(14982)) {
+  source("mchi_zm14982.R")
+}
 for (l in c(14982, 15329, 17757, 22048)) {
   source("mchi_zm.R")
 }
