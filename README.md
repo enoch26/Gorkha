@@ -2,10 +2,33 @@
 
 ## Description
 
+This repository documents and references the geospatial datasets used for the joint modelling of earthquake-induced landslides (EQIL), centroid locations, and landslide sizes in square metres in Nepal following the 2015 Gorkha earthquake. The data include administrative boundaries, geology, elevation, land cover, rainfall, and landslide inventories.
 
-This repository documents and references various geospatial datasets used for earthquake-induced landslide (EQIL) modelling in Nepal for Gorkha Earthquake. Data includes administrative boundaries, geology, elevation, land cover, rainfall, and landslide inventories.
+Technical details are provided in the accepted manuscript:
+
+Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2026). *Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru*. Accepted for publication in *Frontiers in Earth Science: Geohazards and Georisks*.
+
+For statistical details, see:
+
+Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and uncertainty quantification for spatially misaligned data*. *Environmetrics*, 37(2), e70078. https://onlinelibrary.wiley.com/doi/abs/10.1002/env.70078
 
 > **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
+> 
+### BibTeX
+
+```bibtex
+@article{suen2026coherent,
+  title={Coherent disaggregation and uncertainty quantification for spatially misaligned data},
+  author={Suen, Man Ho and Naylor, Mark and Lindgren, Finn},
+  journal={Environmetrics},
+  volume={37},
+  number={2},
+  pages={e70078},
+  year={2026},
+  publisher={Wiley Online Library}
+}
+```
+
 
 ---
 
