@@ -104,6 +104,7 @@ _The Himalaya Regional Land Cover Database_
 - `mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
 - `pred_zm.R`: Plots the posterior susceptibility map zoom-out.
 - `coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
+- `summary_stat.R`: Summary statistics provided in Table 1.
 
 ---
 ## Citation
