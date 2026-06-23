@@ -155,6 +155,7 @@ pred_lst_b <- ls(pattern = "fp.b")
 #   geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red")
 # ggsave(paste0("figures/model/check_landcover.pdf"), width = tw, height = tw/2)
 pwr <- 1.75
+# pwr <- 2
 sc <- scales::rescale(seq(0,1,length.out = 30)^pwr)
 
 if (to_plot) {
@@ -448,3 +449,236 @@ if (FALSE) {
     }
   }
 }
+
+
+# just fit6a for website github readme ------------------------------------
+
+library(ggspatial)
+library(sf)
+library(shadowtext)
+library(stringr)
+
+## Kathmandu point --------------------------------------------------------------
+
+kathmandu <- st_as_sf(
+  data.frame(
+    name = "Kathmandu",
+    lon = 85.3240,
+    lat = 27.7172
+  ),
+  coords = c("lon", "lat"),
+  crs = 4326
+)
+
+kathmandu <- st_transform(kathmandu, st_crs(pxl))
+
+## extract coordinates for halo text -------------------------------------------
+
+kathmandu_xy <- kathmandu
+coords <- st_coordinates(kathmandu_xy)
+
+kathmandu_xy$x <- coords[, 1]
+kathmandu_xy$y <- coords[, 2]
+kathmandu_xy$name_wrap <- stringr::str_wrap(kathmandu_xy$name, width = 10)
+
+## intensity plot only ----------------------------------------------------------
+
+p_fit6a_intensity <- ggplot() +
+  gg(fp6a$lambda["mean"], geom = "tile") +
+  scale_fill_viridis_c(
+    values = sc,
+    option = "D",
+    name = "Intensity",
+    breaks = NULL,
+    labels = NULL,
+    guide = guide_colorbar(
+      title = "Intensity",
+      ticks = FALSE,
+      label = FALSE
+    )
+  ) +
+  labs(x = "", y = "") +
+  geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+  
+  ## Kathmandu point
+  geom_sf(
+    data = kathmandu,
+    color = "black",
+    fill = "white",
+    shape = 21,
+    size = 2.5,
+    stroke = 0.7
+  ) +
+  
+  ## Kathmandu label immediately next to point
+  shadowtext::geom_shadowtext(
+    data = kathmandu_xy,
+    aes(x = x, y = y, label = name_wrap),
+    nudge_x = 5,
+    nudge_y = 0,
+    hjust = 0,
+    vjust = 0.5,
+    size = 5,
+    color = "black",
+    bg.color = "white",
+    bg.r = 0.12
+  ) +
+  
+  ## scale bar: bottom-left
+  annotation_scale(
+    location = "bl",
+    width_hint = 0.25,
+    text_cex = 0.7,
+    line_width = 0.6
+  ) +
+  
+  ## north arrow: top-right
+  annotation_north_arrow(
+    location = "tr",
+    which_north = "true",
+    pad_x = unit(0.2, "cm"),
+    pad_y = unit(0.2, "cm"),
+    style = north_arrow_fancy_orienteering(
+      text_size = 8,
+      line_width = 0.6
+    )
+  ) +
+  
+  theme(
+    legend.title = element_text(),
+    legend.text = element_blank(),
+    legend.ticks = element_blank()
+  )
+
+p_fit6a_intensity
+
+## save as jpg -----------------------------------------------------------------
+
+ggsave(
+  filename = here("figures", "p_fit6a_intensity.jpg"),
+  plot = p_fit6a_intensity,
+  width = tw / 1.25,
+  height = tw / 2,
+  dpi = 300
+)
+
+
+# gif ---------------------------------------------------------------------
+
+library(sf)
+library(gganimate)
+library(gifski)
+
+## landslide centroids ----------------------------------------------------------
+
+landslide_centroids <- st_centroid(landslides_c)
+landslide_centroids <- st_transform(landslide_centroids, st_crs(pxl))
+
+coords_ls <- st_coordinates(landslide_centroids)
+
+landslide_centroids_xy <- landslide_centroids
+landslide_centroids_xy$x <- coords_ls[, 1]
+landslide_centroids_xy$y <- coords_ls[, 2]
+landslide_centroids_xy$slide_id <- seq_len(nrow(landslide_centroids_xy))
+
+## drop sf geometry for animation
+landslide_centroids_xy <- st_drop_geometry(landslide_centroids_xy)
+p_fit6a_gif <- ggplot() +
+  gg(fp6a$lambda["mean"], geom = "tile") +
+  scale_fill_viridis_c(
+    values = sc,
+    option = "D",
+    name = "Intensity",
+    breaks = NULL,
+    labels = NULL,
+    guide = guide_colorbar(
+      title = "Intensity",
+      ticks = FALSE,
+      label = FALSE
+    )
+  ) +
+  labs(x = "", y = "") +
+  geom_sf(data = st_as_sfc(bnd), fill = NA, color = "red") +
+  
+  ## animated landslide centroids as normal x/y points
+  geom_point(
+    data = landslide_centroids_xy,
+    aes(x = x, y = y, group = slide_id),
+    color = "red",
+    fill = "red",
+    shape = 21,
+    size = .1,
+    stroke = 0.2,
+    alpha = 0.8
+  ) +
+  
+  ## Kathmandu point
+  geom_sf(
+    data = kathmandu,
+    color = "black",
+    fill = "white",
+    shape = 21,
+    size = 2.5,
+    stroke = 0.7
+  ) +
+  
+  ## Kathmandu label
+  shadowtext::geom_shadowtext(
+    data = kathmandu_xy,
+    aes(x = x, y = y, label = name_wrap),
+    nudge_x = 5,
+    nudge_y = 0,
+    hjust = 0,
+    vjust = 0.5,
+    size = 3,
+    color = "black",
+    bg.color = "white",
+    bg.r = 0.12
+  ) +
+  
+  annotation_scale(
+    location = "bl",
+    width_hint = 0.25,
+    text_cex = 0.7,
+    line_width = 0.6
+  ) +
+  
+  annotation_north_arrow(
+    location = "tr",
+    which_north = "true",
+    pad_x = unit(0.2, "cm"),
+    pad_y = unit(0.2, "cm"),
+    style = north_arrow_fancy_orienteering(
+      text_size = 8,
+      line_width = 0.6
+    )
+  ) +
+  
+  theme(
+    legend.title = element_text(),
+    legend.text = element_blank(),
+    legend.ticks = element_blank()
+  ) +
+  transition_reveal(slide_id)
+
+  # transition_states(
+  #   slide_id,
+  #   transition_length = 1,
+  #   state_length = 1
+  # )
+anim_save(
+  filename = here("figures", "p_fit6a_landslide_centroids.gif"),
+  animation = animate(
+    p_fit6a_gif,
+    nframes = 120,
+    fps = 15,
+    width = 2400,
+    height = 1333,
+    res = 300,
+    renderer = gifski_renderer()
+  )
+)
+
+
+
+
