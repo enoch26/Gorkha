@@ -6,7 +6,7 @@ This repository documents and references the geospatial datasets used for the jo
 
 <figure>
   <img src="p_fit6a_intensity.jpg" alt="fit6a predicted intensity" width="100%">
-  <figcaption><strong>Figure:</strong> Predicted landslide occurence intensity from fit6a for 2015 Gorkha earthquake-induced landslides.</figcaption>
+  <figcaption><strong>Figure:</strong> Predicted landslide occurence susceptibility (intensity) from fit6a for 2015 Gorkha earthquake-induced landslides.</figcaption>
 </figure>
 
 ## Details
