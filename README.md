@@ -8,7 +8,7 @@ Technical details are provided in the accepted manuscript:
 
 Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2026). *Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru*. Accepted for publication in *Frontiers in Earth Science: Geohazards and Georisks*.
 
-For statistical details, see:
+For statistical details on spatial misalignment, see:
 
 Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and uncertainty quantification for spatially misaligned data*. *Environmetrics*, 37(2), e70078. https://onlinelibrary.wiley.com/doi/abs/10.1002/env.70078
 
