@@ -66,6 +66,506 @@ rownames(landslides_zm) <- rownames(mchi_sf_zm) <- NULL
 landslides_zm_df <- as.data.frame(landslides_zm)
 
 
+# geology_zm --------------------------------------------------------------
+#-------------------------------
+# clip geology to zoomed basin
+# fill gaps using nearest geology from full geology layer
+# merge same geology classes
+#-------------------------------
+
+library(sf)
+library(dplyr)
+library(ggplot2)
+
+# make valid and align CRS
+basin_zm_sf <- st_make_valid(basin_zm_sf)
+geology     <- st_make_valid(geology)
+
+geology <- st_transform(geology, st_crs(basin_zm_sf))
+
+# basin as one polygon
+basin_union <- st_union(basin_zm_sf)
+
+#-------------------------------
+# clip geology to basin
+#-------------------------------
+
+geology_zm <- st_intersection(
+  geology,
+  basin_union
+)
+
+geology_zm <- geology_zm |>
+  select(ROCK_TYPES, geometry) |>
+  st_make_valid()
+
+#-------------------------------
+# fill missing ROCK_TYPES attributes using nearest valid geology
+# from the full geology layer
+#-------------------------------
+
+geology_valid <- geology |>
+  filter(!is.na(ROCK_TYPES), ROCK_TYPES != "") |>
+  select(ROCK_TYPES, geometry) |>
+  st_make_valid()
+
+missing_i <- which(is.na(geology_zm$ROCK_TYPES) | geology_zm$ROCK_TYPES == "")
+
+if (length(missing_i) > 0 && nrow(geology_valid) > 0) {
+  
+  nearest_i <- st_nearest_feature(
+    geology_zm[missing_i, ],
+    geology_valid
+  )
+  
+  geology_zm$ROCK_TYPES[missing_i] <- geology_valid$ROCK_TYPES[nearest_i]
+}
+
+#-------------------------------
+# merge existing same geology classes
+#-------------------------------
+
+geology_merged <- geology_zm |>
+  group_by(ROCK_TYPES) |>
+  summarise(
+    geometry = st_union(geometry),
+    .groups = "drop"
+  ) |>
+  st_make_valid()
+
+#-------------------------------
+# find spatial gaps between basin and clipped geology
+#-------------------------------
+
+geology_union <- st_union(geology_merged)
+
+gaps_geom <- st_difference(
+  basin_union,
+  geology_union
+)
+
+gaps_geom <- st_collection_extract(gaps_geom, "POLYGON")
+
+gaps_sf <- st_sf(
+  geometry = gaps_geom,
+  crs = st_crs(basin_zm_sf)
+)
+
+gaps_sf <- gaps_sf[!st_is_empty(gaps_sf), ]
+
+#-------------------------------
+# assign spatial gaps using nearest geology from full geology layer
+#-------------------------------
+
+if (nrow(gaps_sf) > 0) {
+  
+  nearest_gap_i <- st_nearest_feature(
+    gaps_sf,
+    geology_valid
+  )
+  
+  gaps_sf$ROCK_TYPES <- geology_valid$ROCK_TYPES[nearest_gap_i]
+  
+  gaps_sf <- gaps_sf |>
+    select(ROCK_TYPES, geometry)
+  
+  geology_filled_full <- bind_rows(
+    geology_merged |> select(ROCK_TYPES, geometry),
+    gaps_sf
+  )
+  
+} else {
+  
+  geology_filled_full <- geology_merged |>
+    select(ROCK_TYPES, geometry)
+}
+
+#-------------------------------
+# final merged geology, covering whole basin
+#-------------------------------
+
+geology_merged_full <- geology_filled_full |>
+  group_by(ROCK_TYPES) |>
+  summarise(
+    geometry = st_union(geometry),
+    .groups = "drop"
+  ) |>
+  st_make_valid()
+
+# optional check remaining gap area
+remaining_gap <- st_difference(
+  basin_union,
+  st_union(geology_merged_full)
+)
+
+print(st_area(remaining_gap))
+
+library(sf)
+library(dplyr)
+library(ggplot2)
+
+#-------------------------------
+# create panel-labelled overlay data
+#-------------------------------
+
+panels <- c("A. Imagery", "B. Geology")
+
+mchi_facet <- bind_rows(
+  mchi_sf_zm |> mutate(panel = "A. Imagery"),
+  mchi_sf_zm |> mutate(panel = "B. Geology")
+)
+
+basin_facet <- bind_rows(
+  basin_zm_sf |> mutate(panel = "A. Imagery"),
+  basin_zm_sf |> mutate(panel = "B. Geology")
+)
+
+landslides_facet <- bind_rows(
+  landslides_zm |> mutate(panel = "A. Imagery"),
+  landslides_zm |> mutate(panel = "B. Geology")
+)
+
+# geology only appears in Geology panel
+geology_facet <- geology_merged_full |>
+  mutate(panel = "B. Geology")
+
+#-------------------------------
+# plot with facet_wrap
+#-------------------------------
+
+#-------------------------------
+# shorter geology names for legend
+#-------------------------------
+
+geology_name_lookup <- c(
+  "Bhimphedi Group"                    = "Bhimphedi",
+  "Higher Himalaya Crystallines"       = "Higher Himalaya",
+  "Kuncha Group"                       = "Kuncha",
+  "Lesser Himalaya"                    = "Lesser Himalaya",
+  "Mesozoic Tibetian Sedimentary Zo"   = "Mesozoic Tethyan",
+  "Nawakot Group"                      = "Nawakot",
+  "Ordovician Igneous Rocks"           = "Ordovician Igneous",
+  "Paleozoic Tibetan Sedementary Zo"   = "Palaeozoic Tethyan",
+  "Phulchauki  Group"                  = "Phulchauki",
+  "Pre-Cambrian and probably Paleoz"   = "Pre-Cambrian/Palaeozoic",
+  "Precambrian Igneous Rocks"          = "Precambrian Igneous",
+  "Siwalik Group"                      = "Siwalik",
+  "Tertiary (Miocene)"                 = "Tertiary"
+)
+
+geology_facet <- geology_facet |>
+  dplyr::mutate(
+    ROCK_TYPES_SHORT = dplyr::recode(
+      ROCK_TYPES,
+      !!!geology_name_lookup
+    )
+  )
+
+geology_cols_short <- geology_cols
+names(geology_cols_short) <- geology_name_lookup[names(geology_cols)]
+
+
+#-------------------------------
+# white background behind north arrow and scale
+# bottom-right
+#-------------------------------
+if (l == 22048){
+bb <- sf::st_bbox(basin_zm_sf)
+
+bb_w <- bb["xmax"] - bb["xmin"]
+bb_h <- bb["ymax"] - bb["ymin"]
+
+ns_bg <- data.frame(
+  panel = unique(mchi_facet$panel),
+  xmin = bb["xmin"] + 0.625 * bb_w,
+  xmax = bb["xmin"] + 0.995 * bb_w,
+  ymin = bb["ymin"] + 0.005 * bb_h,
+  ymax = bb["ymin"] + 0.265 * bb_h
+)
+
+#-------------------------------
+# plot with facet_wrap
+#-------------------------------
+
+p_facet <- ggplot() +
+  
+  # imagery background only in Imagery panel
+  geom_spatraster_rgb(
+    data = tile
+  ) +
+  
+  # geology background only in Geology panel
+  geom_sf(
+    data = geology_facet,
+    aes(fill = ROCK_TYPES_SHORT),
+    colour = "grey40",
+    linewidth = 0.1,
+    alpha = 0.75,
+    inherit.aes = FALSE
+  ) +
+  
+  # channel steepness for both panels
+  gg(
+    data = mchi_facet,
+    aes(color = log10(m_chi)),
+    size = 0.5
+  ) +
+  
+  # basin boundary for both panels
+  geom_sf(
+    data = basin_facet,
+    col = "red",
+    fill = NA,
+    inherit.aes = FALSE
+  ) +
+  
+  # landslides for both panels
+  geom_sf(
+    data = landslides_facet,
+    fill = "red",
+    col = "red",
+    size = 0.2,
+    alpha = 0.5,
+    inherit.aes = FALSE
+  ) +
+  
+  # white background behind north arrow and scale
+  geom_rect(
+    data = ns_bg,
+    aes(
+      xmin = xmin,
+      xmax = xmax,
+      ymin = ymin,
+      ymax = ymax
+    ),
+    inherit.aes = FALSE,
+    fill = scales::alpha("white", 0.90),
+    colour = NA
+  ) +
+  
+  scale_colour_viridis_c(
+    name = expression(log[10] ~ k[sn])
+  ) +
+  
+  scale_fill_manual(
+    values = geology_cols_short,
+    # breaks = setdiff(names(geology_cols_short), "Kuncha"),
+    na.value = "transparent",
+    name = "Geology"
+  ) +
+  
+  facet_wrap(~panel, ncol = 2) +
+  
+  coord_sf(
+    xlim = c(bb["xmin"], bb["xmax"]),
+    ylim = c(bb["ymin"], bb["ymax"]),
+    expand = FALSE
+  ) +
+  
+  ggspatial::annotation_north_arrow(
+    location = "br",
+    which_north = "true",
+    pad_x = unit(0.20, "in"),
+    pad_y = unit(0.15, "in"),
+    height = unit(0.35, "in"),
+    width  = unit(0.5, "in"),
+    style = ggspatial::north_arrow_fancy_orienteering(
+      text_col = "black",
+      line_col = "black",
+      fill = c("white", "black")
+    )
+  ) +
+  
+  ggspatial::annotation_scale(
+    location = "br",
+    pad_x = unit(0.12, "in"),
+    pad_y = unit(0.05, "in"),
+    text_col = "black",
+    line_col = "black"
+  ) +
+  
+  theme_bw() +
+  theme(
+    axis.title = element_blank(),
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold")
+  ) +
+  
+  guides(
+    fill = guide_legend(
+      nrow = 1,
+      byrow = TRUE
+    ),
+    colour = guide_colourbar(
+      barwidth = unit(3.5, "cm"),
+      barheight = unit(0.35, "cm")
+    )
+  )
+
+
+ggsave(
+  paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_geo_facet.jpg"),
+  plot = p_facet,
+  width = tw / 1.85,
+  height = tw / 4,
+  dpi = 200
+)
+}
+
+
+
+# 15329 -------------------------------------------------------------------
+
+
+if (l == 15329){
+bb <- sf::st_bbox(basin_zm_sf)
+
+bb_w <- bb["xmax"] - bb["xmin"]
+bb_h <- bb["ymax"] - bb["ymin"]
+
+ns_bg <- data.frame(
+  panel = unique(mchi_facet$panel),
+  xmin = bb["xmin"] + 0.625 * bb_w,
+  xmax = bb["xmin"] + 0.995 * bb_w,
+  ymin = bb["ymin"] + 0.005 * bb_h,
+  ymax = bb["ymin"] + 0.265 * bb_h
+)
+
+#-------------------------------
+# plot with facet_wrap
+#-------------------------------
+
+p_facet <- ggplot() +
+  
+  # imagery background only in Imagery panel
+  geom_spatraster_rgb(
+    data = tile
+  ) +
+  
+  # geology background only in Geology panel
+  geom_sf(
+    data = geology_facet,
+    aes(fill = ROCK_TYPES_SHORT),
+    colour = "grey40",
+    linewidth = 0.1,
+    alpha = 0.75,
+    inherit.aes = FALSE
+  ) +
+  
+  # channel steepness for both panels
+  gg(
+    data = mchi_facet,
+    aes(color = log10(m_chi)),
+    size = 0.5
+  ) +
+  
+  # basin boundary for both panels
+  geom_sf(
+    data = basin_facet,
+    col = "red",
+    fill = NA,
+    inherit.aes = FALSE
+  ) +
+  
+  # landslides for both panels
+  geom_sf(
+    data = landslides_facet,
+    fill = "red",
+    col = "red",
+    size = 0.2,
+    alpha = 0.5,
+    inherit.aes = FALSE
+  ) +
+  
+  # white background behind north arrow and scale
+  geom_rect(
+    data = ns_bg,
+    aes(
+      xmin = xmin,
+      xmax = xmax,
+      ymin = ymin,
+      ymax = ymax
+    ),
+    inherit.aes = FALSE,
+    fill = scales::alpha("white", 0.90),
+    colour = NA
+  ) +
+  
+  scale_colour_viridis_c(
+    name = expression(log[10] ~ k[sn])
+  ) +
+  
+  scale_fill_manual(
+    values = geology_cols_short,
+    # breaks = setdiff(names(geology_cols_short), "Kuncha"),
+    na.value = "transparent",
+    name = "Geology"
+  ) +
+  
+  facet_wrap(~panel, ncol = 2) +
+  
+  coord_sf(
+    xlim = c(bb["xmin"], bb["xmax"]),
+    ylim = c(bb["ymin"], bb["ymax"]),
+    expand = FALSE
+  ) +
+  
+  scale_x_continuous(
+    breaks = scales::breaks_pretty(n = 3)
+  ) +
+  
+  ggspatial::annotation_north_arrow(
+    location = "br",
+    which_north = "true",
+    pad_x = unit(0.20, "in"),
+    pad_y = unit(0.15, "in"),
+    height = unit(0.5, "in"),
+    width  = unit(0.5, "in"),
+    style = ggspatial::north_arrow_fancy_orienteering(
+      text_col = "black",
+      line_col = "black",
+      fill = c("white", "black")
+    )
+  ) +
+  
+  ggspatial::annotation_scale(
+    location = "br",
+    pad_x = unit(0.1, "in"),
+    pad_y = unit(0.05, "in"),
+    text_col = "black",
+    line_col = "black"
+  ) +
+  
+  theme_bw() +
+  theme(
+    axis.title = element_blank(),
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold")
+  ) +
+  
+  guides(
+    fill = guide_legend(
+      nrow = 1,
+      byrow = TRUE
+    ),
+    colour = guide_colourbar(
+      barwidth = unit(3.5, "cm"),
+      barheight = unit(0.35, "cm")
+    )
+  )
+
+
+ggsave(
+  paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tile_geo_facet.jpg"),
+  plot = p_facet,
+  width = tw/1.5, height = tw /3, 
+  dpi = 200
+)
+
+# ggsave(paste0("data/lsdtt/", fdr, "/figure/", as.character(l), "_basin_zm_tag.png"), width = tw/3, height = tw /3, dpi = 100)
+}
+
+
 
 if (to_plot) {
 

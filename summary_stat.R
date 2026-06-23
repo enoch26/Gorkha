@@ -1,5 +1,5 @@
 
-# summary statistics ------------------------------------------------------
+# summary statistics for table 1 ------------------------------------------------------
 
 
 CV_thin <- FALSE; CV_chess <- FALSE
