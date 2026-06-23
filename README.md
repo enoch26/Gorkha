@@ -18,8 +18,7 @@ For statistical details on spatial misalignment, see:
 
 Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and uncertainty quantification for spatially misaligned data*. *Environmetrics*, 37(2), e70078. https://onlinelibrary.wiley.com/doi/abs/10.1002/env.70078
 
-> **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
-> 
+
 ### BibTeX
 
 ```bibtex
@@ -42,9 +41,10 @@ Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and un
 }
 ```
 
-
 ---
 
+> **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
+> 
 ## 📁 Administrative Boundaries (Shapefiles)
 
 **Main source:**  
