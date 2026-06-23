@@ -4,6 +4,18 @@
 
 This repository documents and references the geospatial datasets used for the joint modelling of earthquake-induced landslides (EQIL), centroid locations, and landslide sizes in square metres in Nepal following the 2015 Gorkha earthquake. The data include administrative boundaries, geology, elevation, land cover, rainfall, and landslide inventories.
 
+<figure>
+  <img src="p_fit6a_intensity.jpg" alt="fit6a predicted intensity" width="100%">
+  <figcaption><strong>Figure:</strong> Predicted landslide occurence susceptibility (intensity) from fit6a for 2015 Gorkha earthquake-induced landslides.</figcaption>
+</figure>
+
+<figure>
+  <img src="p_fit6a_landslide_centroids.gif" alt="Animated landslide centroids over fit6a predicted intensity" width="100%">
+  <figcaption><strong>Figure:</strong> Animated landslide centroids over the fit6a predicted intensity surface.</figcaption>
+</figure>
+
+
+## Details
 Technical details are provided in the accepted manuscript:
 
 Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2026). *Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru*. Accepted for publication in *Frontiers in Earth Science: Geohazards and Georisks*.
@@ -12,8 +24,7 @@ For statistical details on spatial misalignment, see:
 
 Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and uncertainty quantification for spatially misaligned data*. *Environmetrics*, 37(2), e70078. https://onlinelibrary.wiley.com/doi/abs/10.1002/env.70078
 
-> **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
-> 
+
 ### BibTeX
 
 ```bibtex
@@ -36,9 +47,10 @@ Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and un
 }
 ```
 
-
 ---
 
+> **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
+> 
 ## 📁 Administrative Boundaries (Shapefiles)
 
 **Main source:**  
@@ -104,6 +116,7 @@ _The Himalaya Regional Land Cover Database_
 - `mchi.R`: Plots the normalised channel steepness index (ksn) and channel profile analysis.
 - `pred_zm.R`: Plots the posterior susceptibility map zoom-out.
 - `coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
+- `summary_stat.R`: Summary statistics provided in Table 1.
 
 ---
 ## Citation
