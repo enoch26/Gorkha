@@ -14,25 +14,9 @@ This repository documents and references the geospatial datasets used for the jo
 
 `fit6a` is the main landslide susceptibility model used in this study. It estimates how landslide susceptibility varies across the study area.
 
-$\lambda(s)
-=
-\exp\left[
-\alpha
-+
-f_1\{\mathrm{PGA}(s)\}
-+
-f_2\{\log(k_{sn}(s))\}
-+
-f_3\{\mathrm{Rainfall}(s)\}
-+
-\beta\,\exp\{-\mathrm{Fd2Ch}(s)\}
-+
-u(s)
-\right]$
-
 In simplified form, the model is:
 
-`log(lambda(s)) = beta0 + f1(PGA(s)) + f2(log(ksn(s))) + f3(Rainfall(s)) + beta * exp(-Fd2Ch(s)) + u(s)`
+`log(lambda(s)) = beta0 + f1(PGA(s)) + f2(log(ksn(s))) + f3(Rainfall(s)) + beta * exp(-Fd2Ch(s))`
 
 The model combines information on:
 
@@ -40,7 +24,6 @@ The model combines information on:
 - topography, represented by `log(ksn)`;
 - rainfall;
 - distance to the nearest fluvial channel; and
-- residual spatial patterns not captured by the mapped covariates.
 
 Here, `lambda(s)` is the predicted landslide intensity or susceptibility at location `s`. The terms `f1`, `f2`, and `f3` allow flexible nonlinear relationships with shaking, channel steepness, and rainfall. The channel-distance term gives a stronger effect close to fluvial channels and a weaker effect farther away. The spatial random effect `u(s)` captures remaining spatial clustering not explained by the other variables.
 
