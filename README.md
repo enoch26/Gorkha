@@ -10,20 +10,21 @@ This repository documents and references the geospatial datasets used for the jo
     (intensity) surface from model fit6a using channel steepness index for 2015 Gorkha earthquake-induced landslides. </figcaption>
 </figure>
 
-## Model `fit6a`
+### Model `fit6a`
 
 `fit6a` is the main landslide susceptibility model used in this study. It estimates how landslide susceptibility varies across the study area.
 
-In simplified form, the model is:
+`Landslide susceptibility(s) ~ PGA effect + river-incision effect + rainfall effect + channel-distance effect + spatial effect`
 
-`log(lambda(s)) = beta0 + f1(PGA(s)) + f2(log(ksn(s))) + f3(Rainfall(s)) + beta * exp(-Fd2Ch(s))`
+In simplified form, the model is:
+`log(lambda(s)) ~ beta0 + f1(PGA(s)) + f2(log(ksn(s))) + f3(Rainfall(s)) + beta * exp(-Fd2Ch(s))`
 
 The model combines information on:
 
 - earthquake shaking;
 - topography, represented by `log(ksn)`;
-- rainfall;
-- distance to the nearest fluvial channel; and
+- rainfall; and
+- distance to the nearest fluvial channel.
 
 Here, `lambda(s)` is the predicted landslide intensity or susceptibility at location `s`. The terms `f1`, `f2`, and `f3` allow flexible nonlinear relationships with shaking, channel steepness, and rainfall. The channel-distance term gives a stronger effect close to fluvial channels and a weaker effect farther away. The spatial random effect `u(s)` captures remaining spatial clustering not explained by the other variables.
 
