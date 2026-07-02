@@ -11,9 +11,9 @@ This repository documents and references the geospatial datasets used for the jo
   }
 
   .gif-crop-left img {
-    width: calc(100% + 100px); /* amount added to compensate for crop */
-    margin-left: -100px;       /* amount trimmed from the left */
+    width: 100%;
     display: block;
+    transform: translateX(-100px); /* crop 100px from the left */
   }
 </style>
 
