@@ -10,6 +10,41 @@ This repository documents and references the geospatial datasets used for the jo
     (intensity) surface from model fit6a using channel steepness index for 2015 Gorkha earthquake-induced landslides. </figcaption>
 </figure>
 
+## Model `fit6a`
+
+The main landslide susceptibility model used here is `fit6a`. This model estimates the spatial intensity of landslide centroids across the study area.
+
+For each location or pixel \(s\), the model can be written as:
+
+$$
+\lambda(s)
+\sim
+\beta_0
++
+f_1\{\mathrm{PGA}(s)\}
++
+f_2\{\log(k_{sn}(s))\}
++
+f_3\{\mathrm{Rainfall}(s)\}
++
+\beta\,\exp\{-\mathrm{Fd2Ch}(s)\}
++
+u(s)
+$$
+
+where:
+
+- \(\lambda(s)\) is the predicted landslide occurrence intensity or susceptibility at location \(s\);
+- \(\alpha\) is the intercept;
+- \(\mathrm{PGA}(s)\) is peak ground acceleration;
+- \(k_{sn}(s)\) is normalised channel steepness, used as a proxy for river incision;
+- \(\mathrm{Rainfall}(s)\) is the rainfall covariate;
+- \(\mathrm{Fd2Ch}(s)\) is the distance to the nearest fluvial channel;
+- \(\beta\,\exp\{-\mathrm{Fd2Ch}(s)\}\) represents a distance-to-channel effect that is strongest near channels and decreases with distance;
+- \(f_1\), \(f_2\), and \(f_3\) are flexible nonlinear effects modelled using second-order random walks, `rw2`;
+- \(u(s)\) is a spatial random effect that captures remaining spatial structure not explained by the covariates.
+
+In words, `fit6a` models landslide susceptibility as a function of earthquake shaking, river-incision-related topography, rainfall, proximity to fluvial channels, and residual spatial clustering.
 
 ## Details
 Technical details are provided in the accepted manuscript:
