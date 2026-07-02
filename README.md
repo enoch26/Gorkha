@@ -12,13 +12,21 @@ This repository documents and references the geospatial datasets used for the jo
 
 ## Model `fit6a`
 
-The main landslide susceptibility model used here is `fit6a`. This model estimates the spatial intensity of landslide centroids across the study area.
+`fit6a` is the main landslide susceptibility model used in this study. It estimates how landslide susceptibility varies across the study area.
 
-For each location or pixel \(s\), the model can be written as:
+The model combines information on:
+
+- earthquake shaking;
+- topography, represented by $$\log(k_{sn})$$;
+- rainfall;
+- distance to the nearest fluvial channel; and
+- residual spatial patterns not captured by the mapped covariates.
+
+For each location or pixel $$s$$, the model is:
 
 $$
-\lambda(s)
-\sim
+\log \lambda(s)
+=
 \beta_0
 +
 f_1\{\mathrm{PGA}(s)\}
@@ -32,19 +40,9 @@ f_3\{\mathrm{Rainfall}(s)\}
 u(s)
 $$
 
-where:
+Here, $$\lambda(s)$$ is the predicted landslide intensity or susceptibility at location $$s$$. The terms $$f_1$$, $$f_2$$, and $$f_3$$ allow flexible nonlinear relationships with shaking, channel steepness, and rainfall. The channel-distance term gives a stronger effect close to fluvial channels and a weaker effect farther away. The spatial random effect $$u(s)$$ captures remaining spatial clustering not explained by the other variables.
 
-- \(\lambda(s)\) is the predicted landslide occurrence intensity or susceptibility at location \(s\);
-- \(\alpha\) is the intercept;
-- \(\mathrm{PGA}(s)\) is peak ground acceleration;
-- \(k_{sn}(s)\) is normalised channel steepness, used as a proxy for river incision;
-- \(\mathrm{Rainfall}(s)\) is the rainfall covariate;
-- \(\mathrm{Fd2Ch}(s)\) is the distance to the nearest fluvial channel;
-- \(\beta\,\exp\{-\mathrm{Fd2Ch}(s)\}\) represents a distance-to-channel effect that is strongest near channels and decreases with distance;
-- \(f_1\), \(f_2\), and \(f_3\) are flexible nonlinear effects modelled using second-order random walks, `rw2`;
-- \(u(s)\) is a spatial random effect that captures remaining spatial structure not explained by the covariates.
-
-In words, `fit6a` models landslide susceptibility as a function of earthquake shaking, river-incision-related topography, rainfall, proximity to fluvial channels, and residual spatial clustering.
+In simple terms, `fit6a` predicts where landslides are more likely to occur based on shaking, landscape form, rainfall, proximity to channels, and unresolved spatial structure.
 
 ## Details
 Technical details are provided in the accepted manuscript:
