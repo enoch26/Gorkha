@@ -4,14 +4,34 @@
 
 This repository documents and references the geospatial datasets used for the joint modelling of earthquake-induced landslides (EQIL), centroid locations, and landslide sizes in square metres in Nepal following the 2015 Gorkha earthquake. The data include administrative boundaries, geology, elevation, land cover, rainfall, and landslide inventories.
 
+<style>
+  .gif-crop-left {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .gif-crop-left img {
+    width: calc(100% + 100px); /* amount added to compensate for crop */
+    margin-left: -100px;       /* amount trimmed from the left */
+    display: block;
+  }
+</style>
+
 <figure>
-  <img src="p_fit6a_intensity.jpg" alt="fit6a predicted intensity" width="100%">
-  <figcaption><strong>Figure:</strong> Predicted landslide occurence susceptibility (intensity) from fit6a for 2015 Gorkha earthquake-induced landslides.</figcaption>
+  <div class="gif-crop-left">
+    <img src="p_fit6a_landslide_centroids.gif"
+         alt="Animated landslide centroids over fit6a predicted intensity">
+  </div>
+
+  <figcaption>
+    <strong>Figure:</strong> Animated landslide centroids over the fit6a predicted occurrence susceptibility
+    (intensity) surface from model fit6a for 2015 Gorkha earthquake-induced landslides.
+  </figcaption>
 </figure>
 
 <figure>
   <img src="p_fit6a_landslide_centroids.gif" alt="Animated landslide centroids over fit6a predicted intensity" width="100%">
-  <figcaption><strong>Figure:</strong> Animated landslide centroids over the fit6a predicted intensity surface.</figcaption>
+  <figcaption><strong>Figure:</strong> Animated landslide centroids over the fit6a predicted occurence susceptibility (intensity) surface from model fit6a for 2015 Gorkha earthquake-induced landslides.</figcaption>
 </figure>
 
 
