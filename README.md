@@ -11,10 +11,10 @@ This repository documents and references the geospatial datasets used for the jo
   }
 
   .gif-crop-left img {
-    width: calc(100% + 100px);
+    width: calc(100% + 1000px);
     max-width: none;
     display: block;
-    transform: translateX(-100px);
+    transform: translateX(-1000px);
   }
 </style>
 
