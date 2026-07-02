@@ -31,8 +31,6 @@ Here, `lambda(s)` is the predicted landslide intensity or susceptibility at loca
 
 In simple terms, `fit6a` predicts where landslides are more likely to occur based on shaking, landscape form, rainfall, proximity to channels, and unresolved spatial structure.
 
----
-
 ## Citation and Further Details
 
 If you use this dataset, code, or analysis, please cite:
@@ -70,8 +68,9 @@ Suen, M. H., Naylor, M., & Lindgren, F. (2026). *Coherent disaggregation and unc
 ---
 
 > **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
->
-> ## Dataset
+
+---
+## Dataset
 ## 📁 Administrative Boundaries (Shapefiles)
 
 **Main source:**  
