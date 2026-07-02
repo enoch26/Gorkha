@@ -11,9 +11,10 @@ This repository documents and references the geospatial datasets used for the jo
   }
 
   .gif-crop-left img {
-    width: 100%;
+    width: calc(100% + 100px);
+    max-width: none;
     display: block;
-    transform: translateX(-100px); /* crop 100px from the left */
+    transform: translateX(-100px);
   }
 </style>
 
@@ -28,6 +29,8 @@ This repository documents and references the geospatial datasets used for the jo
     (intensity) surface from model fit6a for 2015 Gorkha earthquake-induced landslides.
   </figcaption>
 </figure>
+
+
 
 <figure>
   <img src="p_fit6a_landslide_centroids.gif" alt="Animated landslide centroids over fit6a predicted intensity" width="100%">
