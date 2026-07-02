@@ -14,10 +14,11 @@ This repository documents and references the geospatial datasets used for the jo
 
 `fit6a` is the main landslide susceptibility model used in this study. It estimates how landslide susceptibility varies across the study area.
 
-$$
-\log \lambda(s)
+$
+\lambda(s)
 =
-\beta_0
+\exp\left[
+\alpha
 +
 f_1\{\mathrm{PGA}(s)\}
 +
@@ -28,7 +29,8 @@ f_3\{\mathrm{Rainfall}(s)\}
 \beta\,\exp\{-\mathrm{Fd2Ch}(s)\}
 +
 u(s)
-$$
+\right]
+$
 
 In simplified form, the model is:
 
