@@ -31,15 +31,19 @@ Here, `lambda(s)` is the predicted landslide intensity or susceptibility at loca
 
 In simple terms, `fit6a` predicts where landslides are more likely to occur based on shaking, landscape form, rainfall, proximity to channels, and unresolved spatial structure.
 
-## Details
-Technical details are provided in the accepted manuscript:
+---
+
+## Citation and Further Details
+
+If you use this dataset, code, or analysis, please cite:
 
 Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2026). *Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru*. Accepted for publication in *Frontiers in Earth Science: Geohazards and Georisks*.
 
-For statistical details on spatial misalignment, see:
+Additional technical details are provided in the accepted manuscript.
 
-Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and uncertainty quantification for spatially misaligned data*. *Environmetrics*, 37(2), e70078. https://onlinelibrary.wiley.com/doi/abs/10.1002/env.70078
+For statistical details related to spatial misalignment, see:
 
+Suen, M. H., Naylor, M., & Lindgren, F. (2026). *Coherent disaggregation and uncertainty quantification for spatially misaligned data*. *Environmetrics*, 37(2), e70078. https://onlinelibrary.wiley.com/doi/abs/10.1002/env.70078
 
 ### BibTeX
 
@@ -66,7 +70,8 @@ Suen, M. H., Naylor, M., \& Lindgren, F. (2026). *Coherent disaggregation and un
 ---
 
 > **Note:** Some datasets are updated periodically. Always verify the latest versions via official portals (e.g. USGS, FAO, etc.).
-> 
+>
+> ## Dataset
 ## 📁 Administrative Boundaries (Shapefiles)
 
 **Main source:**  
@@ -133,13 +138,6 @@ _The Himalaya Regional Land Cover Database_
 - `pred_zm.R`: Plots the posterior susceptibility map zoom-out.
 - `coefvar.R`: Plots the coefficient of variation for the intensity and covariate effect maps.
 - `summary_stat.R`: Summary statistics provided in Table 1.
-
----
-## Citation
-
-For attribution, please cite this work as: Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2025). Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru. arXiv preprint arXiv:2507.08742.
-
-
 
 ---
 ## Session Information
