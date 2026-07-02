@@ -14,9 +14,10 @@ This repository documents and references the geospatial datasets used for the jo
 
 `fit6a` is the main landslide susceptibility model used in this study. It estimates how landslide susceptibility varies across the study area.
 
-`Landslide susceptibility(s) ~ PGA effect + river-incision effect + rainfall effect + channel-distance effect + spatial effect`
+`Landslide susceptibility ~ PGA effect + river-incision effect + rainfall effect + channel-distance effect`
 
 In simplified form, the model is:
+
 `log(lambda(s)) ~ beta0 + f1(PGA(s)) + f2(log(ksn(s))) + f3(Rainfall(s)) + beta * exp(-Fd2Ch(s))`
 
 The model combines information on:
