@@ -1,95 +1,111 @@
-# only either one can be true
-# CV_thin <- FALSE; CV_chess <- TRUE
-# CV_thin <- TRUE; CV_chess <- FALSE
-# source("read_data.R");source("model.R");source("pred.R");source("pred_zm.R")
-# Sys.sleep(21600)
-# Sys.sleep(43200)
+# =============================================================================
+# Model run script
+# =============================================================================
+# Choose ONE section to run at a time.
+#
+# Cross-validation options:
+#   - Grid CV:     CV_thin = FALSE, CV_chess = TRUE
+#   - Thinning CV: CV_thin = TRUE,  CV_chess = FALSE
+#   - Full model:  CV_thin = FALSE, CV_chess = FALSE
+# =============================================================================
 
-# GRID CV-------------------------------------------------------------------
-# Code to run Grid CV, run each section chunk separately
-## white gridCV ------------------------------------------------------------
-CV_thin <- FALSE; CV_chess <- TRUE # choose thin or grid (chess) cross validation
-train <- "white" # choose the grid (chess) cross validation checkerboard colour
-# cv_chess_resol <- c(5, 5)
-cv_chess_resol <- c(3, 3) # set train and test grid resolution in km
+
+# =============================================================================
+# GRID CROSS-VALIDATION
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# White grid CV
+# -----------------------------------------------------------------------------
+CV_thin  <- FALSE
+CV_chess <- TRUE
+
+train <- "white"
 trainset <- "grid"
-source("read_data.R");source("score_su.R")
-source("read_data.R");source("model.R");source("score.R");source("compute_time.R");q()
-
-# Sys.sleep(20000)
-## black gridCV ------------------------------------------------------------
-# Sys.sleep(3600)
-CV_thin <- FALSE; CV_chess <- TRUE
-train <- "black"
 cv_chess_resol <- c(3, 3)
+
+source("read_data.R")
+source("model.R")
+source("score.R")
+source("compute_time.R")
+
+q()
+
+
+# -----------------------------------------------------------------------------
+# Black grid CV
+# -----------------------------------------------------------------------------
+CV_thin  <- FALSE
+CV_chess <- TRUE
+
+train <- "black"
 trainset <- "grid"
-source("read_data.R");source("score_su.R")
-source("read_data.R");source("model.R");source("score.R"); source("compute_time.R");q()
+cv_chess_resol <- c(3, 3)
+
+source("read_data.R")
+source("model.R")
+source("score.R")
+source("compute_time.R")
+
+q()
 
 
-# THINNING CV ----------------------------------------------------------------
-# Code to run Thnning CV, run either "thinA" or "thinB" separately
-# either choose thinA or thinB for trainset
-# Sys.sleep(3600)
-CV_thin <- TRUE; CV_chess <- FALSE
-# trainset <- "thinA" # "thinA" or "thinB"
+# =============================================================================
+# THINNING CROSS-VALIDATION
+# =============================================================================
+# Choose either:
+#   trainset <- "thinA"
+#   trainset <- "thinB"
+# =============================================================================
+
+CV_thin  <- TRUE
+CV_chess <- FALSE
+
 trainset <- "thinB"
 cv_thin_resol <- c(3, 3)
-source("read_data.R");source("score_su.R")
-# cv_thin_resol <- c(5, 5)
-source("read_data.R");source("model.R");source("score.R")
 
-# source("model_su.R");source("score_su.R"); q()
+source("read_data.R")
+source("model.R")
+source("score.R")
+source("compute_time.R")
 
-source("compute_time.R"); q()
+q()
 
-# FULL Model for Model Case Study --------------------------------------------------------------------
-# Code to run Full model for Model Case Study
-# Sys.sleep(10000)
-CV_thin <- FALSE; CV_chess <- FALSE
+
+# =============================================================================
+# FULL MODEL FOR CASE STUDY
+# =============================================================================
+
+CV_thin  <- FALSE
+CV_chess <- FALSE
+
 trainset <- ""
 cv_thin_resol <- c(3, 3)
-# cv_thin_resol <- c(5, 5)
-source("read_data.R");source("model.R");source("score.R");  
-# source("compute_time.R"); 
+
+source("read_data.R")
+source("model.R")
+source("score.R")
 source("coefvar.R")
+
 x_pxl <- 1000
 source("pxl.R")
-source("pred.R");source("pred_zm.R");q()
+
+source("pred.R")
+source("pred_zm.R")
+
+q()
 
 
-# fit all landslides data -------------------------------------------------
-CV_thin <- FALSE; CV_chess <- FALSE
+# =============================================================================
+# FIT ALL LANDSLIDE DATA AND GENERATE POSTERIOR PREDICTIONS
+# =============================================================================
+
+CV_thin  <- FALSE
+CV_chess <- FALSE
+
 trainset <- ""
 cv_thin_resol <- c(3, 3)
-source("read_data.R");source("model.R");
-# generate posterior predictions
+
+source("read_data.R")
+source("model.R")
 source("pred.R")
-
-# source("read_data.R");source("model.R");source("score_b.R")
-# source("read_data.R");source("model.R");source("score.R");q()
-# source("read_data.R");source("model.R");source("score.R");q()
-
-# source("read_data.R");source("model.R");source("pred.R")
-# source("read_data.R");source("model.R");source("score.R")
-# source("read_data.R");source("model.R")
-
-
-# Sys.sleep(10000)
-# train <- "black"
-# cv_chess_resol <- c(3, 3)
-# CV_thin <- FALSE; CV_chess <- TRUE
-# trainset <- ""
-# source("read_data.R");source("model_su.R");source("score_su.R");q()
-
-# Sys.sleep(15000)
-# train <- "white"
-# cv_chess_resol <- c(3, 3)
-# CV_thin <- FALSE; CV_chess <- TRUE
-# trainset <- ""
-# source("read_data.R");source("model_su.R");source("score_su.R"); q()
-# source("compute_time.R");q()
-
-# source("read_data.R");source("model.R");source("pred.R");source("score.R"); source("coefvar.R"); source("compute_time.R")
-# source("read_data.R");source("model.R");source("score_b.R")
-# source("read_data.R");source("model.R");source("score.R");q()
