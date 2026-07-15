@@ -195,3 +195,7 @@ loaded via a namespace (and not attached):
 [57] glue_1.8.1         DBI_1.3.0          xml2_1.5.2         R6_2.6.1          
 [61] systemfonts_1.3.2  units_1.0-1     
 ```
+## Funding
+
+The authors gratefully acknowledge funding from the EPSRC–UKRI Mathematics Doctoral Training Partnership  
+(grant number EP/W523847/1, project reference 2617239).
