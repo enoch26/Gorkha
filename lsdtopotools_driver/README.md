@@ -1,25 +1,26 @@
-# COP30DEM Basin Extraction Workflow
+# COP30DEM Topographic Analysis Workflow
 
-This repository contains a parameter file for processing a digital elevation model (DEM) called `cop30dem`. The workflow is configured to generate a hillshade, remove sea areas, identify drainage basins, extract channel-network information, and export basin and junction data.
+This repository contains two driver files for processing a digital elevation model (DEM) named `cop30dem`.
 
-This setup is suitable for topographic and geomorphological analysis, including drainage basin extraction and river-network processing.
+The workflow is split into two stages:
+
+1. **`driver_01.driver`** — creates hillshade, extracts basins, junctions, channels, and segmented M-chi data.
+2. **`driver_02.driver`** — uses the M-chi output from Stage 1 to calculate hillslope and relief metrics.
 
 ## Tutorial
 
-A video tutorial related to this workflow is available here:
+Watch the tutorial here:
 
-[YouTube Tutorial](https://www.youtube.com/watch?v=LLiD4MhVDMc)
+[https://www.youtube.com/watch?v=LLiD4MhVDMc](https://www.youtube.com/watch?v=LLiD4MhVDMc)
 
-## Repository Contents
+---
 
-This repository is expected to contain the parameter file and the associated DEM data.
+## Files
 
-Example contents:
+This repository should contain:
 
 ```text
-.
-├── README.md
-├── cop30dem.param
-├── cop30dem.bil
-├── cop30dem.hdr
-└── other input/output files
+README.md
+driver_01.driver
+driver_02.driver
+cop30dem.dem / cop30dem.bil / cop30dem.tif
