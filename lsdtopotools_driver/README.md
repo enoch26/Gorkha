@@ -1,6 +1,6 @@
 # COP30DEM Topographic Analysis Workflow
 
-This repository contains two driver files for processing a digital elevation model (DEM) named `cop30dem`.
+This repository contains two driver files for processing a digital elevation model (DEM) named `cop30dem` using [LSDTopoTools](https://lsdtopotools.github.io/).
 
 The workflow is split into two stages:
 
