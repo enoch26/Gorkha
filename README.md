@@ -6,9 +6,14 @@ This repository documents and references the geospatial datasets used for the jo
 
 <figure>
   <img src="p_fit6a_landslide_centroids.gif" alt="Animated landslide centroids over fit6a predicted intensity" width="100%">
-  <figcaption><strong>Figure:</strong> Animated landslide centroids (red) over the fit6a predicted occurrence susceptibility
-    (intensity) surface from model fit6a using channel steepness index for 2015 Gorkha earthquake-induced landslides. </figcaption>
+  <figcaption>
+    <strong>Figure:</strong> Animated landslide centroids (red) over the fit6a predicted occurrence susceptibility
+    (intensity) surface from model fit6a using channel steepness index for 2015 Gorkha earthquake-induced landslides.
+    A lower spatial resolution version is presented here to reduce storage size; refer to the code for generating
+    higher-resolution outputs.
+  </figcaption>
 </figure>
+
 
 ### Model `fit6a`
 
