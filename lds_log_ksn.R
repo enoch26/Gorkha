@@ -18,10 +18,45 @@ log_ksn_tag <- log10(ksn_tag$cop30dem_channel_tagged_pixels)
 log_ksn_tag_zm <- log_ksn_tag %>% crop(basin_zm_sf)
 
 ksn_tag_ori <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels_near.tif")) %>%
-  # ksn_tag <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
+  # ksn_tag_ori <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
   project(crs_nepal$input, threads = TRUE) %>%
   crop(bnd_out, mask = TRUE) %>%
-  clamp(1, values = TRUE)
+  clamp(1, values = TRUE) # remove the glacier hanging valley ksn
+
+if(FALSE){
+  library(terra)
+  library(dplyr)
+  
+  # raster before clamp
+  ksn_tag_preclamp <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
+    project(crs_nepal$input, threads = TRUE) %>%
+    crop(bnd_out, mask = TRUE)
+  
+  # raster after clamp
+  ksn_tag_ori <- ksn_tag_preclamp %>%
+    clamp(lower = 1, values = TRUE)
+  
+  # cells affected by clamp: original values below 1
+  affected <- ksn_tag_preclamp < 1
+  
+  # count affected cells and valid cells
+  n_affected <- terra::global(affected, "sum", na.rm = TRUE)[1, 1]
+  n_total    <- terra::global(!is.na(ksn_tag_preclamp), "sum", na.rm = TRUE)[1, 1]
+  
+  # percentage affected
+  pct_affected <- 100 * n_affected / n_total
+  
+  pct_affected
+  
+}
+
+# to get the landslides fall under .651
+if(FALSE){
+ksn_tag_ori <- rast(here("data", "lsdtt", fdr, "cop30dem_channel_tagged_pixels.bil")) %>%
+  project(crs_nepal$input, threads = TRUE) %>%
+  crop(bnd_out, mask = TRUE)
+}
+
 log_ksn_tag_ori <- log10(ksn_tag_ori$cop30dem_channel_tagged_pixels)
 log_ksn_tag_ori_zm <- log_ksn_tag_ori %>% crop(basin_zm_sf)
 
@@ -37,7 +72,7 @@ landslides_c$log_ksn_ori <- extract(log_ksn_tag_ori, vect(st_geometry(landslides
 # landslides_c_glacier <- (landslides_c[landslides_c$log_ksn_ori < 1.5,])
 landslides_c_glacier <- (landslides_c[landslides_c$log_ksn_ori < .651,])
 nrow(landslides_c_glacier)
-
+# [1] 75
 bnd_zm <- st_intersection(bnd, basin_zm_sf)
 
 # tile <- maptiles::get_tiles(st_as_sfc(bnd_out), provider = "Esri.WorldImagery", crop = TRUE, zoom = 13) 
