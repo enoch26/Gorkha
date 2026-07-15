@@ -23,4 +23,4 @@ This repository should contain:
 README.md
 driver_01.driver
 driver_02.driver
-cop30dem.dem / cop30dem.bil / cop30dem.tif
+cop30dem.bil 
