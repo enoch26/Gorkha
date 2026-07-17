@@ -155,8 +155,8 @@ calculate_channel_ridge_relief: true
 ---
 
 ## How to Run
-After installing LSDTopoTools, 
-Run `driver_01.driver` first.
+
+Run `driver_01.driver` first after installing LSDTopoTools.
 
 Example:
 
