@@ -131,7 +131,7 @@ _The Himalaya Regional Land Cover Database_
 
 ## 🗺️ Raster Processing Note
 
-- To fill the gaps caused by buffering between the study area and `nep_geo.shp`, use the script `nepal_geo_rast_fill.R`. This applies nearest-neighbour interpolation to ensure full coverage in the Gorkha district, making the raster suitable for subsequent spatial analysis.
+- To fill the gaps caused by buffering between the study area and `Nep_geology.shp`, use the script `nepal_geo_rast_fill.R`. This applies nearest-neighbour interpolation to ensure full coverage in the Gorkha district, making the raster suitable for subsequent spatial analysis.
 
 ---
 ## R code
