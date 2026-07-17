@@ -34,6 +34,7 @@ This repository contains:
 README.md
 driver_01.driver
 driver_02.driver
+PlotChiAnalysis.py
 cop30dem.bil    # user-provided DEM file
 cop30dem.hdr    # header file associated with the BIL raster
 ```
@@ -172,6 +173,13 @@ Example:
 lsdtt-basic-metrics driver_02.driver
 ```
 
+Combining everything and plotting the result, a two line command can be:
+
+```bash
+lsdtt-chi-mapping driver_01.driver && lsdtt-basic-metrics driver_02.driver
+python PlotChiAnalysis.py -dir ./ -all_stacks True -basin_keys 0 -basin_lists 0
+```
+
 ---
 
 ## Expected Output Files
@@ -184,14 +192,17 @@ cop30dem_MChiSegmented.csv
 
 This file is required by `driver_02.driver`.
 
-Other possible outputs include:
+Other outputs include:
 
 ```text
-cop30dem_HS.bil
-cop30dem_Basins.bil
-cop30dem_Junctions.csv
+cop30dem_hs.bil
+cop30dem_AllBasins.bil
+cop30dem_JN.csv
+cop30dem_SLOPE.bil
 cop30dem_TWI.bil
-cop30dem_Relief.bil
+cop30dem_RELIEFTOCHAN.bil
+cop30dem_RELIEFTOFARRIDGE.bil
+cop30dem_channel_tagged_pixels.bil
 ```
 
 Actual filenames may vary depending on the software version.
