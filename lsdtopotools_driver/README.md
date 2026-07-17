@@ -155,13 +155,13 @@ calculate_channel_ridge_relief: true
 ---
 
 ## How to Run
-
+After installing LSDTopoTools, 
 Run `driver_01.driver` first.
 
 Example:
 
 ```bash
-./lsdtt-basic-metrics driver_01.driver
+lsdtt-chi-mapping driver_01.driver
 ```
 
 Then run `driver_02.driver`.
@@ -169,7 +169,7 @@ Then run `driver_02.driver`.
 Example:
 
 ```bash
-./lsdtt-basic-metrics driver_02.driver
+lsdtt-basic-metrics driver_02.driver
 ```
 
 Depending on your installation, the command may instead be:
