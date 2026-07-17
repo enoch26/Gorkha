@@ -172,15 +172,6 @@ Example:
 lsdtt-basic-metrics driver_02.driver
 ```
 
-Depending on your installation, the command may instead be:
-
-```bash
-./lsdtt-chi-mapping driver_01.driver
-./lsdtt-chi-mapping driver_02.driver
-```
-
-Use the command required by your installed topographic analysis tool.
-
 ---
 
 ## Expected Output Files
