@@ -40,7 +40,7 @@ In simple terms, `fit6a` predicts where landslides are more likely to occur base
 
 If you use this dataset, code, or analysis, please cite:
 
-Suen, M. H., Naylor, M., Mudd, S., & Lindgren, F. (2026). *Influence of river incision on landslides triggered in Nepal by the Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru*. Accepted for publication in *Frontiers in Earth Science: Geohazards and Georisks*.
+Suen, M. H., Naylor, M., Mudd, S. M., & Lindgren, F. (2026). *Influence of river incision on landslides triggered in Nepal by the 2015 Gorkha earthquake: Results from a pixel-based susceptibility model using inlabru*. *Frontiers in Earth Science*, 14, 1876760.
 
 Additional technical details are provided in the accepted manuscript.
 
