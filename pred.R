@@ -133,6 +133,8 @@ fp6a %<-% {
   )
 }
 
+saveRDS(fp6a, file = "fp6a.RDS")
+
 fp6b %<-% {
   predict(fit6b,
     newdata = pxl,
