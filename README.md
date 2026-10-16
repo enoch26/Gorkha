@@ -15,6 +15,14 @@ This repository documents and references the geospatial datasets used for the jo
 </figure>
 
 
+## Interactive dashboard
+
+An interactive version of the landslide susceptibility visualisation is available here:
+
+[Open the Gorkha Earthquake-Induced Landslide Susceptibility Dashboard](https://enoch26.shinyapps.io/gorkha-earthquake-landslide-dashboard/)
+
+The dashboard allows users to explore selected spatial layers, including channel steepness, landslide intensity, and peak ground acceleration, together with mapped landslide locations and earthquake epicentres. The dashboard uses aggregated, lower-resolution layers for faster web-based visualisation; its outputs are therefore intended for exploration and illustration and may differ from the higher-resolution results presented in the paper. Refer to the paper and accompanying code for the full-resolution analysis and model outputs.
+
 ### Model `fit6a`
 
 `fit6a` is the main landslide susceptibility model used in this study. It estimates how landslide susceptibility varies across the study area.
